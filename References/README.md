@@ -14,3 +14,7 @@
 [Game of Deep Learning: Ship datasets](https://www.kaggle.com/arpitjain007/game-of-deep-learning-ship-datasets)
 
 [Real-time gun detection in CCTV : An open problem](https://github.com/Deepknowledge-US/US-Real-time-gun-detection-in-CCTV-An-open-problem-dataset)
+
+[Vision-based Fight Detection From Surveillance Cameras](https://github.com/sayibet/fight-detection-surv-dataset)
+
+[Fight Detection from Still Images in the Wild](https://github.com/sayibet/smfi)
