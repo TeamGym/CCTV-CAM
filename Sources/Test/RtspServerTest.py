@@ -15,7 +15,7 @@ if __name__ == "__main__":
             GstRtspServer.RTSPMediaFactory.__init__(self)
 
         def do_create_element(self, url):
-            src = " videotestsrc ! queue "
+            src = " v4l2src ! video/x-raw,framerate=30/1 ! queue "
             encoding = " x264enc tune=zerolatency "
             payload = " rtph264pay name=pay0 pt=96 "
             return Gst.parse_launch("!".join([src, encoding, payload]))
