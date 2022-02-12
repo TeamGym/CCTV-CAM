@@ -6,14 +6,17 @@ gi.require_version('GstRtspServer', '1.0')
 from gi.repository import Gst, GstRtspServer, GObject
 
 from CameraConfig import CameraConfig
-from FrameBuffer import FrameBuffer
+
+from Buffer import Buffer
+from Frame import Frame
+
 
 import cv2
 
 class WebcamMediaFactory(GstRtspServer.RTSPMediaFactory):
     def __init__(self,
                  cameraConfig : CameraConfig, 
-                 frameBuffer : FrameBuffer):
+                 frameBuffer : Buffer):
         GstRtspServer.RTSPMediaFactory.__init__(self)
 
         self.device = cameraConfig.device
@@ -58,13 +61,15 @@ class WebcamMediaFactory(GstRtspServer.RTSPMediaFactory):
         frame = Frame(timestamp, frame)
         self.frameBuffer.add(frame)
 
+        retval = src.emit('push-buffer', buffer)
+
         if retval != Gst.FlowReturn.OK:
             print(retval)
 
     def do_create_element(self, url):
         launchString = "appsrc name=source is-live=true block=true format=GST_FORMAT_TIME" \
                        " caps=video/x-raw,width={},height={},framerate={}/1,format=BGR ! videoconvert" \
-                       " ! omxh264enc ! rtph264pay config-interval=1 name=pay0 pt=96".format(
+                       " ! queue ! omxh264enc ! rtph264pay config-interval=1 name=pay0 pt=96".format(
                            self.width,
                            self.height,
                            self.fps)

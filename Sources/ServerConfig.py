@@ -34,3 +34,7 @@ class ServerConfig(Config):
 
         self.cameraConfig = CameraConfig()
         self.cameraConfig.loadFromConfigFile(cameraConfigPath)
+
+        if 'TCP' in sections:
+            self.host = config['TCP']['host']
+            self.port = int(config['TCP']['port'])

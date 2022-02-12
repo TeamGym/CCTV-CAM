@@ -5,7 +5,8 @@ class DetectionBox:
                  width : int,
                  height : int,
                  confidence : float,
-                 classID : int):
+                 classID : int,
+                 label : str):
         self.x = x
         self.y = y
         self.width = width

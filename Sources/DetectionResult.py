@@ -6,9 +6,14 @@ from DetectionBox import DetectionBox
 class DetectionResult:
     def __init__(self,
                  boxes : List[DetectionBox],
-                 frame : Frame):
-        self.boxes = boxes
+                 timestamp : int):
+        self.__boxes = boxes
+        self.__timestamp = timestamp
 
-        self.frame = frame
-        self.timestamp = frame.timestamp
-        self.data = frame.data
+    @property
+    def boxes(self):
+        return self.__boxes
+
+    @property
+    def timestamp(self):
+        return self.__timestamp

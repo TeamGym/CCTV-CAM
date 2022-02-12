@@ -1,14 +1,14 @@
+
 import cv2
 import numpy as np
 
 from threading import Thread
 
+from Buffer import Buffer
 from Frame import Frame
-from FrameBuffer import FrameBuffer
 
 from DetectionBox import DetectionBox
 from DetectionResult import DetectionResult
-from DetectionResultBuffer import DetectionResultBuffer
 
 class DetectionThread(Thread):
     def __init__(self,
@@ -16,8 +16,8 @@ class DetectionThread(Thread):
                  configFileName : str,
                  weightsFileName : str,
                  confidenceThreshold : int,
-                 frameBuffer : FrameBuffer,
-                 detectionResultBuffer : DetectionResultBuffer):
+                 frameBuffer : Buffer,
+                 detectionResultBuffer : Buffer):
         super().__init__()
 
         self.network = cv2.dnn.readNetFromDarknet(configFileName, weightsFileName)
@@ -28,51 +28,54 @@ class DetectionThread(Thread):
         self.frameBuffer = frameBuffer
         self.detectionResultBuffer = detectionResultBuffer
 
-    def run(self):
-        while True:
-            if frameBuffer.size() == 0:
-                continue
+    def detect(self):
+        if self.frameBuffer.size == 0:
+            return
 
-            frame = frameBuffer.pop(0)
+        frame = self.frameBuffer.tail()
 
-            timestamp = frame.timestamp
-            data = frame.data
+        timestamp = frame.timestamp
+        image = frame.data
 
-            (H, W) = data.shape[:2]
+        (H, W) = image.shape[:2]
 
-            blob = cv2.dnn.blobFromImage(image, 1 / 255.0, (416, 416), swapRB=True, crop=False)
-            self.network.setInput(blob)
+        blob = cv2.dnn.blobFromImage(image, 1 / 255.0, (416, 416), swapRB=True, crop=False)
+        self.network.setInput(blob)
 
-            layerOutputs = self.network.forward(self.layerNames)
+        layerOutputs = self.network.forward(self.layerNames)
 
-            boxes = []
-            classIDs = []
-            confidences = []
+        boxes = []
+        classIDs = []
+        confidences = []
 
-            for output in layerOutputs:
-                for detection in output:
-                    scores = detection[5:]
-                    classID = np.argmax(scores)
-                    confidence = scores[classID]
+        for output in layerOutputs:
+            for detection in output:
+                scores = detection[5:]
+                classID = np.argmax(scores)
+                confidence = scores[classID]
 
-                    if confidence > self.confidenceThreshold:
-                        box = detection[:4] * np.array([W, H, W, H])
-                        (centerX, centerY, width, height) = box.astype('int')
+                if confidence > self.confidenceThreshold:
+                    box = detection[:4] * np.array([W, H, W, H])
+                    (centerX, centerY, width, height) = box.astype('int')
 
-                        x = int(centerX - width / 2)
-                        y = int(centerY - height / 2)
+                    x = int(centerX - width / 2)
+                    y = int(centerY - height / 2)
 
-                        width = int(width)
-                        height = int(height)
-                        
-                        boxes.append([x, y, width, height])                        
-                        
-            idxs = cv2.dnn.NMSBoxes(boxes,
-                                    confidences,
-                                    self.confidenceThreshold,
-                                    self.confidenceThreshold)
+                    width = int(width)
+                    height = int(height)
 
-            detectionBoxes = []
+                    boxes.append([x, y, width, height])
+                    confidences.append(float(confidence))
+                    classIDs.append(classID)
+
+        idxs = cv2.dnn.NMSBoxes(boxes,
+                                confidences,
+                                self.confidenceThreshold,
+                                self.confidenceThreshold)
+
+        detectionBoxes = []
+
+        if len(idxs) > 0:
             for i in idxs.flatten():
                 box = boxes[i]
                 (x, y, w, h) = (box[0], box[1], box[2], box[3])
@@ -83,8 +86,13 @@ class DetectionThread(Thread):
                 detectionBox = DetectionBox(
                     x, y, w, h,
                     confidence,
-                    classID)
+                    classID,
+                    self.labels[classID])
                 detectionBoxes.append(detectionBox)
 
-            detectionResult = DetectionResult(detectionBoxes, frame)
-            self.detectionResultBuffer.add(detectionResult)
+        detectionResult = DetectionResult(detectionBoxes, timestamp)
+        self.detectionResultBuffer.add(detectionResult)
+
+    def run(self):
+        while True:
+            self.detect()

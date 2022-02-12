@@ -3,7 +3,7 @@ import gi
 
 from threading import Thread
 
-from FrameBuffer import FrameBuffer
+from Buffer import Buffer
 from ServerConfig import ServerConfig
 from WebcamMediaFactory import WebcamMediaFactory
 from WebcamServer import WebcamServer
@@ -16,7 +16,7 @@ from gi.repository import Gst, GstRtspServer, GObject
 
 class RtspServerThread(Thread):
     def __init__(self,
-                 frameBuffer : FrameBuffer,
+                 frameBuffer : Buffer,
                  serverConfig : ServerConfig):
         super().__init__()
 

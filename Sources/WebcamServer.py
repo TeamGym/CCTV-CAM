@@ -6,14 +6,14 @@ gi.require_version('GstRtspServer', '1.0')
 from gi.repository import Gst, GstRtspServer, GObject
 
 from ServerConfig import ServerConfig
-from FrameBuffer import FrameBuffer
+from Buffer import Buffer
 
 from WebcamMediaFactory import WebcamMediaFactory
 
 class WebcamServer:
     def __init__(self,
                  serverConfig : ServerConfig,
-                 frameBuffer : FrameBuffer):
+                 frameBuffer : Buffer):
         self.server = GstRtspServer.RTSPServer()
         self.server.set_service(serverConfig.service)
 
