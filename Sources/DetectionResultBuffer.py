@@ -1,23 +1,10 @@
+from Buffer import Buffer
 from DetectionResult import DetectionResult
 
-class DetectionResultBuffer:
+class DetectionResultBuffer(Buffer):
     def __init__(self):
-        self.buffer = []
+        super().__init__()
 
-    def size(self):
-        return len(self.buffer)
+    def add(self, data):
+        assert isinstance(data, DetectionResultBuffer), "[DetectionResultBuffer::add]: invalid parameter type."
 
-    def add(self, detectionResult : detectionResult):
-        self.buffer.append(detectionResult)
-
-    def remove(self, index):
-        self.buffer.remove(idnex)
-
-    def clear(self):
-        self.buffer.clear()
-
-    def get(self, index):
-        return self.buffer[index]
-
-    def pop(self, index=-1):
-        return self.buffer.pop(index)

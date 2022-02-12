@@ -1,23 +1,9 @@
+from Buffer import Buffer
 from Frame import Frame
 
-class FrameBuffer:
+class FrameBuffer(Buffer):
     def __init__(self):
-        self.buffer = []
+        super().__init__()
 
-    def size(self):
-        return len(self.buffer)
-
-    def add(self, frame: Frame):
-        self.buffer.append(frame)
-
-    def remove(self, index):
-        self.buffer.remove(idnex)
-
-    def clear(self):
-        self.buffer.clear()
-
-    def get(self, index):
-        return self.buffer[index]
-
-    def pop(self, index=-1):
-        return self.buffer.pop(index)
+    def add(self, data):
+        assert isinstance(data, Frame), "[FrameBuffer::add]: invalid parameter type."
