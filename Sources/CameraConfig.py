@@ -17,7 +17,7 @@ class CameraConfig(Config):
         self.fps = fps
         self.format = format
 
-    def loadFromConfigFile(self, filePath):
+    def load(self, filePath):
         config = configparser.ConfigParser()
         config.read(filePath)
 

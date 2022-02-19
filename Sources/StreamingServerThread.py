@@ -3,8 +3,10 @@ import gi
 
 from threading import Thread
 
-from Buffer import Buffer
-from ServerConfig import ServerConfig
+from Core.Buffer import Buffer
+
+from StreamingServerConfig import StreamingServerConfig
+from CameraConfig import CameraConfig 
 from WebcamMediaFactory import WebcamMediaFactory
 from WebcamServer import WebcamServer
 
@@ -14,16 +16,19 @@ gi.require_version('Gst', '1.0')
 gi.require_version('GstRtspServer', '1.0')
 from gi.repository import Gst, GstRtspServer, GObject
 
-class RtspServerThread(Thread):
+class StreamingServerThread(Thread):
     def __init__(self,
-                 frameBuffer : Buffer,
-                 serverConfig : ServerConfig):
+                 serverConfig : StreamingServerConfig,
+                 frameBuffer : Buffer):
         super().__init__()
 
         GObject.threads_init()
         Gst.init(None)
 
-        server = WebcamServer(serverConfig, frameBuffer)
+        service = serverConfig.service
+        mountpoint = serverConfig.mountpoint
+
+        self.server = WebcamServer(service, mountpoint, frameBuffer)
         
     def run(self):
         gLoop = GObject.MainLoop()

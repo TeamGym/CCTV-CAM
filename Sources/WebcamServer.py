@@ -5,22 +5,24 @@ gi.require_version('Gst', '1.0')
 gi.require_version('GstRtspServer', '1.0')
 from gi.repository import Gst, GstRtspServer, GObject
 
-from ServerConfig import ServerConfig
-from Buffer import Buffer
+from StreamingServerConfig import StreamingServerConfig
+from CameraConfig import CameraConfig
+from Core.Buffer import Buffer
 
 from WebcamMediaFactory import WebcamMediaFactory
 
 class WebcamServer:
     def __init__(self,
-                 serverConfig : ServerConfig,
+                 service : str,
+                 mountpoint: str,
                  frameBuffer : Buffer):
         self.server = GstRtspServer.RTSPServer()
-        self.server.set_service(serverConfig.service)
+        self.server.set_service(service)
 
-        mediaFactory = WebcamMediaFactory(serverConfig.cameraConfig, frameBuffer)
+        mediaFactory = WebcamMediaFactory(frameBuffer)
         mediaFactory.set_shared(True)
 
         mountPoints = self.server.get_mount_points()
-        mountPoints.add_factory(serverConfig.mountpoint, mediaFactory)
+        mountPoints.add_factory(mountpoint, mediaFactory)
 
         self.server.attach(None)

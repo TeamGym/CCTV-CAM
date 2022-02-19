@@ -1,5 +1,11 @@
-from Buffer import Buffer
-from CircularBuffer import CircularBuffer
+import os
+if os.path.dirname(os.path.abspath(__file__)) == os.getcwd():
+    from Buffer import Buffer
+    from CircularBuffer import CircularBuffre
+else:
+    from .Buffer import Buffer
+    from .CircularBuffer import CircularBuffer
+
 
 from collections import deque
 

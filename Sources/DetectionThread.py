@@ -4,7 +4,7 @@ import numpy as np
 
 from threading import Thread
 
-from Buffer import Buffer
+from Core.Buffer import Buffer
 from Frame import Frame
 
 from DetectionBox import DetectionBox

@@ -12,7 +12,7 @@ class Buffer:
 
     @rawbuffer.setter
     def rawbuffer(self, value):
-        self.__rawbuffer = value
+        self.__buffer = value
 
     def add(self, data):
         self.__buffer.append(data)

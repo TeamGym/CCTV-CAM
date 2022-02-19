@@ -1,4 +1,8 @@
-from Buffer import Buffer
+import os
+if os.path.dirname(os.path.abspath(__file__)) == os.getcwd():
+    from Buffer import Buffer
+else:
+    from .Buffer import Buffer
 
 from collections import deque
 

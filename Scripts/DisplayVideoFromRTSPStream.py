@@ -8,7 +8,7 @@ if __name__ == "__main__":
 
    rtspLocation = arguments[0]
 
-   command = "gst-launch-1.0 rtspsrc location={} ! queue ! rtph264depay ! h264parse ! avdec_h264 ! xvimagesink"
+   command = "gst-launch-1.0 rtspsrc location={} latency=0 ! rtph264depay ! h264parse ! omxh264dec ! videoconvert ! xvimagesink"
    os.system(command.format(rtspLocation))
    
 

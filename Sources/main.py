@@ -1,32 +1,45 @@
 #!/usr/bin/python3
 
-from StaticTypeCircularBuffer import StaticTypeCircularBuffer
+from Core.StaticTypeCircularBuffer import StaticTypeCircularBuffer
 
-from ServerConfig import ServerConfig
+from ServerConfigLoader import ServerConfigLoader
+from StreamingServerConfig import StreamingServerConfig
+from DetectionServerConfig import DetectionServerConfig
+from CameraConfig import CameraConfig
 
-from RtspServerThread import RtspServerThread
+from VideoCaptureThread import VideoCaptureThread
+from StreamingServerThread import StreamingServerThread
 from DetectionThread import DetectionThread
 from DetectionSenderThread import DetectionSenderThread
 
 from Frame import Frame
 
 from DetectionResult import DetectionResult
-from DetectionRenderer import DetectionRenderer
+from DebugRenderer import DebugRenderer
 
 import signal
 import sys
 
 def HandleSignal(signal, frame):
+    print("Signal detected.")
     sys.exit(0)
 
 if __name__ == "__main__":
     frameBuffer = StaticTypeCircularBuffer(Frame, 64)
     detectionResultBuffer = StaticTypeCircularBuffer(DetectionResult, 64)
+    
+    cameraConfig = CameraConfig()
+    cameraConfig.load("pengca1080p.ini")
 
-    serverConfig = ServerConfig()
-    serverConfig.loadFromConfigFile("ServerConfig.ini")
+    videoCaptureThread = VideoCaptureThread(cameraConfig, frameBuffer)
 
-    rtspServerThread = RtspServerThread(frameBuffer, serverConfig)
+    serverConfigLoader = ServerConfigLoader()
+    serverConfigLoader.load("ServerConfig.ini")
+
+    streamingServerConfig = serverConfigLoader.streaming
+    detectionServerConfig = serverConfigLoader.detection
+
+    streamingServerThread = StreamingServerThread(streamingServerConfig, frameBuffer)
 
     labelFileName = "Darknet/cfg/coco.names"
     configFileName = "Darknet/cfg/yolov4-tiny.cfg"
@@ -43,17 +56,18 @@ if __name__ == "__main__":
         detectionResultBuffer)
 
     detectionSenderThread = DetectionSenderThread(
-        serverConfig,
+        detectionServerConfig,
         detectionResultBuffer)
 
-    rtspServerThread.start()
+    videoCaptureThread.start()
+    streamingServerThread.start()
     detectionThread.start()
     detectionSenderThread.start()
 
-    #renderer = DetectionRenderer(frameBuffer, detectionResultBuffer)
-
-    #while True:
-    #    renderer.render()
-
     signal.signal(signal.SIGINT, HandleSignal)
-    signal.pause()
+
+    renderer = DebugRenderer(frameBuffer, detectionResultBuffer)
+    renderer.mode = "matplotlib"
+
+    while True:
+        renderer.render()

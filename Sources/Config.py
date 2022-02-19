@@ -10,7 +10,7 @@ class Config:
     def __setitem__(self, key, value):
         return setattr(self, key, value)
 
-    def loadFromConfigFile(self, filePath):
+    def load(self, filePath):
         config = configparser.ConfigParser()
         config.read(filePath)
 

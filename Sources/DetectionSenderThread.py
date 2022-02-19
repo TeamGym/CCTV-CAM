@@ -1,8 +1,8 @@
 from threading import Thread
 
-from Buffer import Buffer
+from Core.Buffer import Buffer
 
-from ServerConfig import ServerConfig
+from DetectionServerConfig import DetectionServerConfig
 from DetectionResult import DetectionResult
 
 import socket
@@ -10,8 +10,8 @@ import dill
 
 class DetectionSenderThread(Thread):
     def __init__(self,
-                 serverConfig : ServerConfig,
-                 detectionResultBuffer : ServerConfig):
+                 serverConfig : DetectionServerConfig,
+                 detectionResultBuffer : Buffer):
         super().__init__()
 
         self.detectionResultBuffer = detectionResultBuffer
@@ -45,11 +45,6 @@ class DetectionSenderThread(Thread):
 
                 data = dill.dumps(detectionResult)
                 connection.send(data)
-
-                message = connection.recv(1024)
-                message = dill.loads(message)
-
-                print(message)                
 
                 self.latestTimestamp = detectionResult.timestamp
 
