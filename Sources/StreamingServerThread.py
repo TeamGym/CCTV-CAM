@@ -1,5 +1,4 @@
 import sys
-import gi
 
 from threading import Thread
 

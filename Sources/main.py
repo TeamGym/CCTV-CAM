@@ -8,7 +8,7 @@ from DetectionServerConfig import DetectionServerConfig
 from CameraConfig import CameraConfig
 
 from VideoCaptureThread import VideoCaptureThread
-from StreamingServerThread import StreamingServerThread
+from VideoStreamerThread import VideoStreamerThread
 from DetectionThread import DetectionThread
 from DetectionSenderThread import DetectionSenderThread
 
@@ -39,7 +39,7 @@ if __name__ == "__main__":
     streamingServerConfig = serverConfigLoader.streaming
     detectionServerConfig = serverConfigLoader.detection
 
-    streamingServerThread = StreamingServerThread(cameraConfig, streamingServerConfig, frameBuffer)
+    videoStreamerThread = VideoStreamerThread(cameraConfig, streamingServerConfig, frameBuffer)
 
     labelFileName = "Darknet/cfg/coco.names"
     configFileName = "Darknet/cfg/yolov4-tiny.cfg"
@@ -60,7 +60,7 @@ if __name__ == "__main__":
         detectionResultBuffer)
 
     videoCaptureThread.start()
-    streamingServerThread.start()
+    videoStreamerThread.start()
     detectionThread.start()
     detectionSenderThread.start()
 

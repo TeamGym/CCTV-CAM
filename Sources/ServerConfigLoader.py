@@ -35,5 +35,5 @@ class ServerConfigLoader:
         self.detection.host = config['DetectionServer']['host']
         self.detection.port = int(config['DetectionServer']['port'])
 
-        self.streaming.service = config['StreamingServer']['service']
-        self.streaming.mountpoint = config['StreamingServer']['mountpoint']
+        self.streaming.host = config['StreamingServer']['host']
+        self.streaming.port = int(config['StreamingServer']['port'])

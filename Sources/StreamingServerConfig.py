@@ -2,25 +2,17 @@ from Config import Config
 
 class StreamingServerConfig(Config):
     def __init__(self,
-                 service : str = "5001",
-                 mountpoint : str = '/stream'):
+                 host : str = "0.0.0.0",
+                 port : int = "5000"):
         super().__init__()
 
-        self.__service = service
-        self.__mountpoint = mountpoint
+        self.__host = host
+        self.__port = port
 
     @property
-    def service(self):
-        return self.__service
+    def host(self):
+        return self.__host
 
-    @service.setter
-    def service(self, value):
-        self.__service = value
-
-    @property
-    def mountpoint(self):
-        return self.__mountpoint
-
-    @mountpoint.setter
-    def mountpoint(self, value):
-        self.__mountpoint = value
+    @host.setter
+    def host(self, value):
+        self.__host = value
