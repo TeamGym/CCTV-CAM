@@ -39,7 +39,7 @@ if __name__ == "__main__":
     streamingServerConfig = serverConfigLoader.streaming
     detectionServerConfig = serverConfigLoader.detection
 
-    streamingServerThread = StreamingServerThread(streamingServerConfig, frameBuffer)
+    streamingServerThread = StreamingServerThread(cameraConfig, streamingServerConfig, frameBuffer)
 
     labelFileName = "Darknet/cfg/coco.names"
     configFileName = "Darknet/cfg/yolov4-tiny.cfg"

@@ -46,7 +46,7 @@ class DebugRenderer:
 
         cv2.rectangle(image, (left, top), (right, bottom), color, 2)
         cv2.putText(image, text, (left, top - 5), cv2.FONT_HERSHEY_SIMPLEX,
-                    0.5, color, 2)
+                    0.5, color, 1)
                 
     def render(self):
         if self.frameBuffer.size == 0:
@@ -61,6 +61,8 @@ class DebugRenderer:
         frame = self.frameBuffer.tail()
         image = frame.data
 
+        image = image.copy()
+
         if self.detectionResultBuffer.size != 0:
             detectionResult = self.detectionResultBuffer.tail()
 
@@ -70,6 +72,9 @@ class DebugRenderer:
     def render_matplotlib(self):
         frame = self.frameBuffer.tail()
         image = frame.data
+
+        image = image.copy()
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
         if self.detectionResultBuffer.size != 0:
             detectionResult = self.detectionResultBuffer.tail()

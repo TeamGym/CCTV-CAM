@@ -53,6 +53,6 @@ class VideoCaptureThread(Thread):
             timestamp = self.frameCount * self.duration
         
             frame = Frame(timestamp, frame)
-            self.frameBuffer.add(frame)      
+            self.frameBuffer.add(frame)
 
             self.frameCount += 1

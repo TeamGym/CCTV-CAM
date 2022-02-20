@@ -18,6 +18,7 @@ from gi.repository import Gst, GstRtspServer, GObject
 
 class StreamingServerThread(Thread):
     def __init__(self,
+                 cameraConfig : CameraConfig,
                  serverConfig : StreamingServerConfig,
                  frameBuffer : Buffer):
         super().__init__()
@@ -28,7 +29,7 @@ class StreamingServerThread(Thread):
         service = serverConfig.service
         mountpoint = serverConfig.mountpoint
 
-        self.server = WebcamServer(service, mountpoint, frameBuffer)
+        self.server = WebcamServer(service, mountpoint, cameraConfig, frameBuffer)
         
     def run(self):
         gLoop = GObject.MainLoop()
