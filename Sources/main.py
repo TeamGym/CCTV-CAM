@@ -2,20 +2,20 @@
 
 from Core.StaticTypeCircularBuffer import StaticTypeCircularBuffer
 
-from ServerConfigLoader import ServerConfigLoader
-from StreamingServerConfig import StreamingServerConfig
-from DetectionServerConfig import DetectionServerConfig
-from CameraConfig import CameraConfig
+from Config.ServerConfigLoader import ServerConfigLoader
+from Config.StreamingServerConfig import StreamingServerConfig
+from Config.DetectionServerConfig import DetectionServerConfig
+from Config.CameraConfig import CameraConfig
 
-from VideoCaptureThread import VideoCaptureThread
-from VideoStreamerThread import VideoStreamerThread
-from DetectionThread import DetectionThread
-from DetectionSenderThread import DetectionSenderThread
+from Capture.VideoCaptureThread import VideoCaptureThread
+from Stream.VideoStreamerThread import VideoStreamerThread
+from Detect.DetectionThread import DetectionThread
+from Detect.DetectionSenderThread import DetectionSenderThread
 
-from Frame import Frame
+from Core.Frame import Frame
 
-from DetectionResult import DetectionResult
-from DebugRenderer import DebugRenderer
+from Detect.DetectionResult import DetectionResult
+from Render.DebugRenderer import DebugRenderer
 
 import signal
 import sys
@@ -29,12 +29,12 @@ if __name__ == "__main__":
     detectionResultBuffer = StaticTypeCircularBuffer(DetectionResult, 64)
     
     cameraConfig = CameraConfig()
-    cameraConfig.load("pengca1080p.ini")
+    cameraConfig.load("Config/pengca1080p.ini")
 
     videoCaptureThread = VideoCaptureThread(cameraConfig, frameBuffer)
 
     serverConfigLoader = ServerConfigLoader()
-    serverConfigLoader.load("ServerConfig.ini")
+    serverConfigLoader.load("Config/ServerConfig.ini")
 
     streamingServerConfig = serverConfigLoader.streaming
     detectionServerConfig = serverConfigLoader.detection
