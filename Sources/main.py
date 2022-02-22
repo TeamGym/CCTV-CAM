@@ -9,8 +9,8 @@ from Config.CameraConfig import CameraConfig
 
 from Capture.VideoCaptureThread import VideoCaptureThread
 from Stream.VideoStreamerThread import VideoStreamerThread
+from Stream.DetectionSenderThread import DetectionSenderThread
 from Detect.DetectionThread import DetectionThread
-from Detect.DetectionSenderThread import DetectionSenderThread
 
 from Core.Frame import Frame
 
@@ -19,55 +19,59 @@ from Render.DebugRenderer import DebugRenderer
 
 import signal
 import sys
+import time
 
 def HandleSignal(signal, frame):
     print("Signal detected.")
     sys.exit(0)
 
-if __name__ == "__main__":
-    frameBuffer = StaticTypeCircularBuffer(Frame, 64)
-    detectionResultBuffer = StaticTypeCircularBuffer(DetectionResult, 64)
-    
-    cameraConfig = CameraConfig()
-    cameraConfig.load("Config/pengca1080p.ini")
 
-    videoCaptureThread = VideoCaptureThread(cameraConfig, frameBuffer)
+frameBuffer = StaticTypeCircularBuffer(Frame, 64)
+detectionResultBuffer = StaticTypeCircularBuffer(DetectionResult, 64)
 
-    serverConfigLoader = ServerConfigLoader()
-    serverConfigLoader.load("Config/ServerConfig.ini")
+cameraConfig = CameraConfig()
+cameraConfig.load("Config/pengca1080p.ini")
 
-    streamingServerConfig = serverConfigLoader.streaming
-    detectionServerConfig = serverConfigLoader.detection
+videoCaptureThread = VideoCaptureThread(cameraConfig, frameBuffer)
 
-    videoStreamerThread = VideoStreamerThread(cameraConfig, streamingServerConfig, frameBuffer)
+serverConfigLoader = ServerConfigLoader()
+serverConfigLoader.load("Config/ServerConfig.ini")
 
-    labelFileName = "Darknet/cfg/coco.names"
-    configFileName = "Darknet/cfg/yolov4-tiny.cfg"
-    weightsFileName = "Darknet/weights/yolov4-tiny.weights"
+streamingServerConfig = serverConfigLoader.streaming
+detectionServerConfig = serverConfigLoader.detection
 
-    confidenceThreshold = 0.3
+videoStreamerThread = VideoStreamerThread(cameraConfig, streamingServerConfig, frameBuffer)
 
-    detectionThread = DetectionThread(
-        labelFileName,
-        configFileName,
-        weightsFileName,
-        confidenceThreshold,
-        frameBuffer,
-        detectionResultBuffer)
+labelFileName = "Darknet/cfg/coco.names"
+configFileName = "Darknet/cfg/yolov4-tiny.cfg"
+weightsFileName = "Darknet/weights/yolov4-tiny.weights"
 
-    detectionSenderThread = DetectionSenderThread(
-        detectionServerConfig,
-        detectionResultBuffer)
+confidenceThreshold = 0.3
 
-    videoCaptureThread.start()
-    videoStreamerThread.start()
-    detectionThread.start()
-    detectionSenderThread.start()
+detectionThread = DetectionThread(
+    labelFileName,
+    configFileName,
+    weightsFileName,
+    confidenceThreshold,
+    frameBuffer,
+    detectionResultBuffer)
 
-    signal.signal(signal.SIGINT, HandleSignal)
+detectionSenderThread = DetectionSenderThread(
+    detectionServerConfig,
+    detectionResultBuffer)
 
-    renderer = DebugRenderer(frameBuffer, detectionResultBuffer)
-    renderer.mode = "matplotlib"
+videoCaptureThread.start()
+videoStreamerThread.start()
+detectionThread.start()
+detectionSenderThread.start()
 
-    while True:
-        renderer.render()
+signal.signal(signal.SIGINT, HandleSignal)
+
+"""
+renderer = DebugRenderer(frameBuffer, detectionResultBuffer)
+renderer.mode = "matplotlib"
+
+while True:
+    renderer.render()
+    time.sleep(0.166)
+"""

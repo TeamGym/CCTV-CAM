@@ -20,7 +20,7 @@ class DetectionSenderThread(Thread):
         host = serverConfig.host
         port = serverConfig.port
 
-        self.sender = DetectionSender(host, port)
+        self.sender = DetectionSender(host, port, detectionResultBuffer)
 
     def run(self):
         self.sender.connect()

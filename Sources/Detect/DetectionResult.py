@@ -13,8 +13,8 @@ class DetectionResult:
 
     def as_dict(self):
         return {
-            'timestamp' = self.timestamp,
-            'boxes' = [box.as_dict() for box in self.boxes]
+            'timestamp': self.timestamp,
+            'boxes': [box.as_dict() for box in self.boxes]
         }
 
     @property

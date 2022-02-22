@@ -25,10 +25,9 @@ class VideoStreamerThread(Thread):
         height = cameraConfig.height
         fps = cameraConfig.fps
 
-        host = serverConfig.host
-        port = serverConfig.port
+        location = serverConfig.location
 
-        self.videoStreamer = VideoStreamer(width, height, fps, host, port, framebuffer)
+        self.videoStreamer = VideoStreamer(width, height, fps, location, framebuffer)
 
     def run(self):
         self.videoStreamer.ready()

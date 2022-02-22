@@ -17,16 +17,14 @@ class VideoStreamer:
                  width : int,
                  height : int,
                  fps : int,
-                 host : str,
-                 port : int,
+                 location : str,
                  framebuffer : Buffer):
 
         self.width = width
         self.height = height
-        self.fps = fps
+        self.fps = 10
 
-        self.host = host
-        self.port = port
+        self.location = location
 
         self.duration = 1 / self.fps * Gst.SECOND
         
@@ -38,28 +36,23 @@ class VideoStreamer:
 
         self.pipeline = Gst.parse_launch(
             "appsrc name=m_src caps=video/x-raw,width={},height={},framerate={}/1,format=BGR ! videoconvert !" \
-            "omxh264enc name=m_encoder ! video/x-h264,stream-format=byte-stream ! rtspclientsink location=rtsp://127.0.0.1:50001 name=m_sink" \
-            .format(self.width, self.height, self.fps))
+            "omxh264enc name=m_encoder ! video/x-h264,width=640,height=480,framerate={}/1,format=I420,stream-format=byte-stream !" \
+            "rtspclientsink protocols=tcp name=m_sink" \
+            .format(self.width, self.height, self.fps, self.fps))
         
         source = self.pipeline.get_by_name('m_src')
         source.set_property('is-live', True)
         source.set_property('block', True)
         source.set_property('format', Gst.Format.TIME)
         source.connect('need-data', self.on_need_data)
-        source.connect('enough_data', self.on_need_data)
-        source.connect('seek_data', self.on_need_data)
 
         encoder = self.pipeline.get_by_name('m_encoder')
         encoder.set_property('control-rate', 1)
-        """
-        pay = self.pipeline.get_by_name('m_pay')
-        pay.set_property('name', 'pay0')
-        pay.set_property('pt', 96)
 
         sink = self.pipeline.get_by_name('m_sink')
-        sink.set_property('host', self.host)
-        sink.set_property('port', self.port)
-        """
+        sink.set_property('location', self.location)
+        sink.set_property('latency', 0)
+        sink.set_property('debug', 1)
 
     def ready(self):
         self.pipeline.set_state(Gst.State.PLAYING)
