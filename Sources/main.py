@@ -58,6 +58,7 @@ detectionThread = DetectionThread(
 
 detectionSenderThread = DetectionSenderThread(
     detectionServerConfig,
+    cameraConfig,
     detectionResultBuffer)
 
 videoCaptureThread.start()
@@ -67,11 +68,10 @@ detectionSenderThread.start()
 
 signal.signal(signal.SIGINT, HandleSignal)
 
-"""
 renderer = DebugRenderer(frameBuffer, detectionResultBuffer)
 renderer.mode = "matplotlib"
 
 while True:
     renderer.render()
-    time.sleep(0.166)
-"""
+    time.sleep(0.01)
+

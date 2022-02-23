@@ -27,11 +27,8 @@ class DetectionBox:
             'y': self.y,
             'width': self.width,
             'height': self.height,
-            'left': self.left,
-            'right': self.right,
-            'top': self.top,
-            'bottom': self.bottom,
             'confidence': self.confidence,
+            'classID': self.classID,
             'label': self.label
         }
 

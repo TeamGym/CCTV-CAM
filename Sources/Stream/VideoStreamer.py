@@ -22,7 +22,7 @@ class VideoStreamer:
 
         self.width = width
         self.height = height
-        self.fps = 10
+        self.fps = fps
 
         self.location = location
 
@@ -39,6 +39,7 @@ class VideoStreamer:
             "omxh264enc name=m_encoder ! video/x-h264,width=640,height=480,framerate={}/1,format=I420,stream-format=byte-stream !" \
             "rtspclientsink protocols=tcp name=m_sink" \
             .format(self.width, self.height, self.fps, self.fps))
+        self.bus = self.pipeline.get_bus()
         
         source = self.pipeline.get_by_name('m_src')
         source.set_property('is-live', True)
@@ -52,10 +53,30 @@ class VideoStreamer:
         sink = self.pipeline.get_by_name('m_sink')
         sink.set_property('location', self.location)
         sink.set_property('latency', 0)
-        sink.set_property('debug', 1)
+        #sink.set_property('debug', 1)
+        
+    def get_message(self):
+        message = self.bus.timed_pop(Gst.SECOND)
+
+        print(message.type)
+
+        if message.type == Gst.MessageType.WARNING or \
+           message.type == Gst.MessageType.EOS or \
+           message.type == Gst.MessageType.ERROR:
+
+            print("[VideoStreamer]: Can't stream video to server.", file=sys.stderr)
+            self.pipeline.set_state(Gst.State.NULL)
+            self.pipeline.set_state(Gst.State.PLAYING)
+
+        return True
 
     def ready(self):
-        self.pipeline.set_state(Gst.State.PLAYING)
+        ret = self.pipeline.set_state(Gst.State.PLAYING)
+
+        if ret == Gst.StateChangeReturn.FAILURE:
+            print("[VideoStreamer]: Failed to set pipeline state.", file=sys.stderr)
+
+        GObject.timeout_add_seconds(3, self.get_message)
 
     def on_need_data(self, src, length):
         if self.framebuffer.size <= 0:
@@ -72,6 +93,9 @@ class VideoStreamer:
         buffer.fill(0, data)
         buffer.duration = self.duration
         buffer.pts = int(outerTimestamp)
+
+        if self.frameCount % 60 == 0:
+            print("[VideoStreamer]: Attempt to send data.(timestamp: {})".format(outerTimestamp))
 
         retval = src.emit('push-buffer', buffer)
 

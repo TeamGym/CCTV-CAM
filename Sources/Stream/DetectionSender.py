@@ -1,6 +1,8 @@
 import time
+import sys
 import socket
 import json
+from numpyencoder import NumpyEncoder
 
 from Core.Buffer import Buffer
 from Detect.DetectionBox import DetectionBox
@@ -10,10 +12,15 @@ class DetectionSender:
     def __init__(self,
                  host : str,
                  port : int,
+                 videoWidth : int,
+                 videoHeight : int,
                  detectionResultBuffer : Buffer):
         
         self.host = host
         self.port = port
+
+        self.videoWidth = videoWidth
+        self.videoHeight = videoHeight
 
         self.detectionResultBuffer = detectionResultBuffer
 
@@ -24,45 +31,65 @@ class DetectionSender:
 
     def connect(self):
         while True:
-            try:
-                if self.socket.connect_ex((self.host, self.port)):
-                    print("[DetectionSender]: Can't connect server, wait 3 second.")
-                    time.sleep(3)
-                else:
-                    break
-            except:
+            if self.socket.connect_ex((self.host, self.port)):
                 print("[DetectionSender]: Can't connect server, wait 3 second.")
                 time.sleep(3)
-                continue
+            else:
+                break
 
-    def start(self):
+        print("[DetectionSender]: Connected successfully.")
+
+    def communicate(self):
         cctvInfo = {
             "cam_id": 0,
             "mode": 1,
+            "video_width": self.videoWidth,
+            "video_height": self.videoHeight
         }
         cctvInfo = json.dumps(cctvInfo)
         cctvInfo = cctvInfo.encode('utf-8')
 
+        print("[DetectionSender]:  Attempt to send CCTV info.")
+
         self.socket.sendall(cctvInfo)
 
-        while True:
+        while True:        
             if self.detectionResultBuffer.size <= 0:
+                time.sleep(0.1)
                 continue
 
             detectionResult = self.detectionResultBuffer.tail()            
-            timestamp = detectionResult.timestamp            
+            timestamp = detectionResult.timestamp
 
             if timestamp <= self.latestTimestamp:
+                time.sleep(0.1)
                 continue
-            
+
             self.latestTimestamp = timestamp
 
-            detectionResult = json.dumps(detectionResult.as_dict())
-            detectionResult = detectionResult.encode('utf-8')
-            
-            self.socket.send(detectionResult)
-            
-            
+            #print("[DetectionSender]: Attempt to send detection data.(boxes: {})"
+            #      .format(len(detectionResult.boxes)))
+
+            data = {
+                "timestamp": detectionResult.timestamp / 1e6,
+                "boxes": [box.as_dict() for box in detectionResult.boxes]
+            }
+            data = json.dumps(data, cls=NumpyEncoder)
+            data = data.replace(" ", "")
+            data = data.encode('utf-8')
+
+            self.socket.send(data)
+
+    def communicate_automatically(self):
+         self.connect()
+         
+         while True:
+            try:
+                self.communicate()
+            except OSError as e:
+                print("[DetectionSenderThread]: Unexpected error. Attempt to re-connect.(Error: {})".format(e), file=sys.stderr)
+                self.connect()
+
 
             
 

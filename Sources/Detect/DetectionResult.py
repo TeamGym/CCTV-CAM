@@ -24,3 +24,4 @@ class DetectionResult:
     @property
     def timestamp(self):
         return self.__timestamp
+    

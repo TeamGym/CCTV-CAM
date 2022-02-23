@@ -92,6 +92,8 @@ class DetectionThread(Thread):
         detectionResult = DetectionResult(detectionBoxes, timestamp)
         self.detectionResultBuffer.add(detectionResult)
 
+        #print("[DetectionThread]: Object detection completed.(timestamp: {}, boxes: {})".format(timestamp, len(detectionBoxes)))
+
     def run(self):
         while True:
             self.detect()

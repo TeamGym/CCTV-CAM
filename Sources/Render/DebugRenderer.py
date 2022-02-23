@@ -71,8 +71,9 @@ class DebugRenderer:
 
     def render_matplotlib(self):
         frame = self.frameBuffer.tail()
+        timestamp = frame.timestamp
+        
         image = frame.data
-
         image = image.copy()
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
