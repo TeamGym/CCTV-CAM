@@ -1,18 +1,18 @@
 #!/usr/bin/python3
 
 from Core.StaticTypeCircularBuffer import StaticTypeCircularBuffer
+from Core.Frame import Frame
 
 from Config.ServerConfigLoader import ServerConfigLoader
 from Config.StreamingServerConfig import StreamingServerConfig
 from Config.DetectionServerConfig import DetectionServerConfig
+from Config.HTTPServerConfig import HTTPServerConfig
 from Config.CameraConfig import CameraConfig
 
 from Capture.VideoCaptureThread import VideoCaptureThread
-from Stream.VideoStreamerThread import VideoStreamerThread
-from Stream.DetectionSenderThread import DetectionSenderThread
+from Network.VideoStreamerThread import VideoStreamerThread
+from Network.DetectionSenderThread import DetectionSenderThread
 from Detect.DetectionThread import DetectionThread
-
-from Core.Frame import Frame
 
 from Detect.DetectionResult import DetectionResult
 from Render.DebugRenderer import DebugRenderer
@@ -39,6 +39,7 @@ serverConfigLoader.load("Config/ServerConfig.ini")
 
 streamingServerConfig = serverConfigLoader.streaming
 detectionServerConfig = serverConfigLoader.detection
+httpServerConfig = serverConfigLoader.http
 
 videoStreamerThread = VideoStreamerThread(cameraConfig, streamingServerConfig, frameBuffer)
 
@@ -58,6 +59,7 @@ detectionThread = DetectionThread(
 
 detectionSenderThread = DetectionSenderThread(
     detectionServerConfig,
+    httpServerConfig,
     cameraConfig,
     detectionResultBuffer)
 

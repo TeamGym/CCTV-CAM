@@ -2,15 +2,25 @@ from Config.Config import Config
 
 class StreamingServerConfig(Config):
     def __init__(self,
-                 location : str = ""):
+                 host : str = "127.0.0.1",
+                 port : int = "50001"):
         super().__init__()
 
-        self.__location = location
+        self.__host = host
+        self.__port = port
 
     @property
-    def location(self):
-        return self.__location
+    def host(self):
+        return self.__host
 
-    @location.setter
-    def location(self, value):
-        self.__location = value
+    @host.setter
+    def host(self, value):
+        self.__host = value
+
+    @property
+    def port(self):
+        return self.__port
+
+    @port.setter
+    def port(self, value):
+        self.__port = value
