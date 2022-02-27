@@ -2,7 +2,6 @@ import time
 import sys
 import socket
 import json
-import requests
 
 from numpyencoder import NumpyEncoder
 
@@ -35,6 +34,7 @@ class DetectionSender:
         self.latestTimestamp = 0
 
     def connect(self):
+        """
         statusCode = ""
         while True:
             try:
@@ -49,7 +49,8 @@ class DetectionSender:
             except:
                 print("[DetectionSender]: Can't connect HTTP server, wait 3 second.")
                 time.sleep(3)
-            
+        """
+        
         while True:
             try:
                 if self.socket.connect_ex((self.host, self.port)):
