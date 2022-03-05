@@ -9,9 +9,9 @@ import random
 class DebugRenderer:
     def __init__(self,
                  frameBuffer : Buffer,
-                 detectionResultBuffer : Buffer):
+                 detectionBuffer : Buffer):
         self.frameBuffer = frameBuffer
-        self.detectionResultBuffer = detectionResultBuffer
+        self.detectionBuffer = detectionBuffer
 
         self.renderContext = None
 
@@ -63,10 +63,10 @@ class DebugRenderer:
 
         image = image.copy()
 
-        if self.detectionResultBuffer.size != 0:
-            detectionResult = self.detectionResultBuffer.tail()
+        if self.detectionBuffer.size != 0:
+            detection = self.detectionBuffer.tail()
 
-            for box in detectionResult.boxes:
+            for box in detection.boxes:
                 self.draw_box(image, box)
 
     def render_matplotlib(self):
@@ -77,10 +77,10 @@ class DebugRenderer:
         image = image.copy()
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-        if self.detectionResultBuffer.size != 0:
-            detectionResult = self.detectionResultBuffer.tail()
+        if self.detectionBuffer.size != 0:
+            detection = self.detectionBuffer.tail()
 
-            for box in detectionResult.boxes:
+            for box in detection.boxes:
                 self.draw_box(image, box)
 
         if self.renderContext == None:

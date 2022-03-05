@@ -15,23 +15,14 @@ gi.require_version('Gst', '1.0')
 from gi.repository import Gst, GObject
 
 class VideoStreamerThread(Thread):
-    def __init__(self,
-                 cameraConfig : CameraConfig,
-                 serverConfig : StreamingServerConfig,
-                 framebuffer : Buffer):
+    def __init__(self, streamer):
         super().__init__()
 
-        width = cameraConfig.width
-        height = cameraConfig.height
-        fps = cameraConfig.fps
-
-        host = serverConfig.host
-        port = serverConfig.port
-
-        self.videoStreamer = VideoStreamer(width, height, fps, host, port, framebuffer)
+        self.streamer = streamer
 
     def run(self):
-        self.videoStreamer.ready()
+        self.streamer.build_pipeline()
+        self.streamer.ready()
         
         gLoop = GObject.MainLoop()
         gLoop.run()

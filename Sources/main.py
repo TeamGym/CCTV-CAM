@@ -3,18 +3,25 @@
 from Core.StaticTypeCircularBuffer import StaticTypeCircularBuffer
 from Core.Frame import Frame
 
+from Config.CameraConfig import CameraConfig
+from Config.DetectorConfig import DetectorConfig
 from Config.ServerConfigLoader import ServerConfigLoader
 from Config.StreamingServerConfig import StreamingServerConfig
 from Config.DetectionServerConfig import DetectionServerConfig
 from Config.HTTPServerConfig import HTTPServerConfig
-from Config.CameraConfig import CameraConfig
+
+from Capture.VideoCapture import VideoCapture
+from Detect.Detector import Detector
+from Network.VideoStreamer import VideoStreamer
+from Network.DetectionSender import DetectionSender
 
 from Capture.VideoCaptureThread import VideoCaptureThread
 from Network.VideoStreamerThread import VideoStreamerThread
 from Network.DetectionSenderThread import DetectionSenderThread
 from Detect.DetectionThread import DetectionThread
 
-from Detect.DetectionResult import DetectionResult
+from Detect.Detection import Detection
+
 from Render.DebugRenderer import DebugRenderer
 
 import signal
@@ -25,43 +32,56 @@ def HandleSignal(signal, frame):
     print("Signal detected.")
     sys.exit(0)
 
-
 frameBuffer = StaticTypeCircularBuffer(Frame, 64)
-detectionResultBuffer = StaticTypeCircularBuffer(DetectionResult, 64)
+detectionBuffer = StaticTypeCircularBuffer(Detection, 64)
 
 cameraConfig = CameraConfig()
 cameraConfig.load("Config/pengca1080p.ini")
 
-videoCaptureThread = VideoCaptureThread(cameraConfig, frameBuffer)
+detectorConfig = DetectorConfig()
+detectorConfig.load("Config/yolov4-tiny.ini")
 
 serverConfigLoader = ServerConfigLoader()
-serverConfigLoader.load("Config/ServerConfig.ini")
+serverConfigLoader.load("Config/main-server.ini")
 
 streamingServerConfig = serverConfigLoader.streaming
 detectionServerConfig = serverConfigLoader.detection
 httpServerConfig = serverConfigLoader.http
 
-videoStreamerThread = VideoStreamerThread(cameraConfig, streamingServerConfig, frameBuffer)
+videoCapture = VideoCapture(
+    cameraConfig.device,
+    cameraConfig.width,
+    cameraConfig.height,
+    cameraConfig.fps,
+    cameraConfig.format,
+    frameBuffer)
+videoCaptureThread = VideoCaptureThread(videoCapture)
 
-labelFileName = "Darknet/cfg/coco.names"
-configFileName = "Darknet/cfg/yolov4-tiny.cfg"
-weightsFileName = "Darknet/weights/yolov4-tiny.weights"
+videoStreamer =  VideoStreamer(
+    cameraConfig.width,
+    cameraConfig.height,
+    cameraConfig.fps,
+    streamingServerConfig.location,
+    frameBuffer)
+videoStreamerThread = VideoStreamerThread(videoStreamer)
 
-confidenceThreshold = 0.3
-
-detectionThread = DetectionThread(
-    labelFileName,
-    configFileName,
-    weightsFileName,
-    confidenceThreshold,
+detector = Detector(
+    detectorConfig.label,
+    detectorConfig.config,
+    detectorConfig.weights,
+    detectorConfig.confidenceThreshold,
     frameBuffer,
-    detectionResultBuffer)
+    detectionBuffer)
+detectionThread = DetectionThread(detector)
 
-detectionSenderThread = DetectionSenderThread(
-    detectionServerConfig,
-    httpServerConfig,
-    cameraConfig,
-    detectionResultBuffer)
+detectionSender = DetectionSender(
+    detectionServerConfig.host,
+    detectionServerConfig.port,
+    httpServerConfig.url,
+    cameraConfig.width,
+    cameraConfig.height,
+    detectionBuffer)
+detectionSenderThread = DetectionSenderThread(detectionSender)
 
 videoCaptureThread.start()
 videoStreamerThread.start()
@@ -70,10 +90,11 @@ detectionSenderThread.start()
 
 signal.signal(signal.SIGINT, HandleSignal)
 
-renderer = DebugRenderer(frameBuffer, detectionResultBuffer)
+"""
+renderer = DebugRenderer(frameBuffer, detectionBuffer)
 renderer.mode = "matplotlib"
 
 while True:
     renderer.render()
     time.sleep(0.01)
-
+"""

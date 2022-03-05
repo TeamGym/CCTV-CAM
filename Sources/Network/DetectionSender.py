@@ -7,7 +7,7 @@ from numpyencoder import NumpyEncoder
 
 from Core.Buffer import Buffer
 from Detect.DetectionBox import DetectionBox
-from Detect.DetectionResult import DetectionResult
+from Detect.Detection import Detection
 
 class DetectionSender:
     def __init__(self,
@@ -16,7 +16,7 @@ class DetectionSender:
                  url : str,
                  videoWidth : int,
                  videoHeight : int,
-                 detectionResultBuffer : Buffer):
+                 detectionBuffer : Buffer):
         
         self.host = host
         self.port = port
@@ -26,7 +26,7 @@ class DetectionSender:
         self.videoWidth = videoWidth
         self.videoHeight = videoHeight
 
-        self.detectionResultBuffer = detectionResultBuffer
+        self.detectionBuffer = detectionBuffer
 
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)        
         self.socket.settimeout(10)
@@ -79,12 +79,12 @@ class DetectionSender:
         self.socket.sendall(cctvInfo)
 
         while True:        
-            if self.detectionResultBuffer.size <= 0:
+            if self.detectionBuffer.size <= 0:
                 time.sleep(0.1)
                 continue
 
-            detectionResult = self.detectionResultBuffer.tail()            
-            timestamp = detectionResult.timestamp
+            detection = self.detectionBuffer.tail()
+            timestamp = detection.timestamp
 
             if timestamp <= self.latestTimestamp:
                 time.sleep(0.1)
@@ -93,11 +93,11 @@ class DetectionSender:
             self.latestTimestamp = timestamp
 
             #print("[DetectionSender]: Attempt to send detection data.(boxes: {})"
-            #      .format(len(detectionResult.boxes)))
+            #      .format(len(detection.boxes)))
 
             data = {
-                "timestamp": detectionResult.timestamp / 1e6,
-                "boxes": [box.as_dict() for box in detectionResult.boxes]
+                "timestamp": detection.timestamp / 1e6,
+                "boxes": [box.as_dict() for box in detection.boxes]
             }
             data = json.dumps(data, cls=NumpyEncoder)
             data = data.replace(" ", "")
