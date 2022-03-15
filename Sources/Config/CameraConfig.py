@@ -1,6 +1,6 @@
 import configparser
 
-from Config import Config
+from Config.Config import Config
 
 class CameraConfig(Config):
     def __init__(self,

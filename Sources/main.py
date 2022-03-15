@@ -1,73 +1,101 @@
 #!/usr/bin/python3
 
 from Core.StaticTypeCircularBuffer import StaticTypeCircularBuffer
+from Core.Frame import Frame
 
-from ServerConfigLoader import ServerConfigLoader
-from StreamingServerConfig import StreamingServerConfig
-from DetectionServerConfig import DetectionServerConfig
-from CameraConfig import CameraConfig
+from Config.CameraConfig import CameraConfig
+from Config.DetectorConfig import DetectorConfig
+from Config.ServerConfigLoader import ServerConfigLoader
+from Config.StreamingServerConfig import StreamingServerConfig
+from Config.DetectionServerConfig import DetectionServerConfig
+from Config.HTTPServerConfig import HTTPServerConfig
+
+from Capture.VideoCapture import VideoCapture
+from Detect.Detector import Detector
+from Network.VideoStreamer import VideoStreamer
+from Network.DetectionSender import DetectionSender
 
 from VideoCaptureThread import VideoCaptureThread
-from StreamingServerThread import StreamingServerThread
-from DetectionThread import DetectionThread
+from VideoStreamerThread import VideoStreamerThread
 from DetectionSenderThread import DetectionSenderThread
+from DetectionThread import DetectionThread
 
-from Frame import Frame
+from Detect.Detection import Detection
 
-from DetectionResult import DetectionResult
-from DebugRenderer import DebugRenderer
+from Render.Renderer import Renderer
 
 import signal
 import sys
+import time
+import pyglet
 
 def HandleSignal(signal, frame):
     print("Signal detected.")
     sys.exit(0)
 
-if __name__ == "__main__":
-    frameBuffer = StaticTypeCircularBuffer(Frame, 64)
-    detectionResultBuffer = StaticTypeCircularBuffer(DetectionResult, 64)
-    
-    cameraConfig = CameraConfig()
-    cameraConfig.load("pengca1080p.ini")
+frameBuffer = StaticTypeCircularBuffer(Frame, 64)
+detectionBuffer = StaticTypeCircularBuffer(Detection, 64)
 
-    videoCaptureThread = VideoCaptureThread(cameraConfig, frameBuffer)
+cameraConfig = CameraConfig()
+cameraConfig.load("laptopWebcam.ini")
 
-    serverConfigLoader = ServerConfigLoader()
-    serverConfigLoader.load("ServerConfig.ini")
+detectorConfig = DetectorConfig()
+detectorConfig.load("yolo-gun.ini")
 
-    streamingServerConfig = serverConfigLoader.streaming
-    detectionServerConfig = serverConfigLoader.detection
+serverConfigLoader = ServerConfigLoader()
+serverConfigLoader.load("main-server.ini")
 
-    streamingServerThread = StreamingServerThread(streamingServerConfig, frameBuffer)
+streamingServerConfig = serverConfigLoader.streaming
+detectionServerConfig = serverConfigLoader.detection
+httpServerConfig = serverConfigLoader.http
 
-    labelFileName = "Darknet/cfg/coco.names"
-    configFileName = "Darknet/cfg/yolov4-tiny.cfg"
-    weightsFileName = "Darknet/weights/yolov4-tiny.weights"
+videoCapture = VideoCapture(
+    cameraConfig.device,
+    cameraConfig.width,
+    cameraConfig.height,
+    cameraConfig.fps,
+    cameraConfig.format,
+    frameBuffer)
+videoCaptureThread = VideoCaptureThread(videoCapture)
 
-    confidenceThreshold = 0.3
+videoStreamer =  VideoStreamer(
+    cameraConfig.width,
+    cameraConfig.height,
+    cameraConfig.fps,
+    streamingServerConfig.location,
+    frameBuffer)
+videoStreamerThread = VideoStreamerThread(videoStreamer)
 
-    detectionThread = DetectionThread(
-        labelFileName,
-        configFileName,
-        weightsFileName,
-        confidenceThreshold,
-        frameBuffer,
-        detectionResultBuffer)
+detector = Detector(
+    detectorConfig.label,
+    detectorConfig.config,
+    detectorConfig.weights,
+    detectorConfig.confidenceThreshold,
+    frameBuffer,
+    detectionBuffer)
+detectionThread = DetectionThread(detector)
 
-    detectionSenderThread = DetectionSenderThread(
-        detectionServerConfig,
-        detectionResultBuffer)
+detectionSender = DetectionSender(
+    detectionServerConfig.host,
+    detectionServerConfig.port,
+    httpServerConfig.url,
+    cameraConfig.width,
+    cameraConfig.height,
+    detectionBuffer)
+detectionSenderThread = DetectionSenderThread(detectionSender)
 
-    videoCaptureThread.start()
-    streamingServerThread.start()
-    detectionThread.start()
-    detectionSenderThread.start()
+renderer = Renderer(
+    cameraConfig.width,
+    cameraConfig.height,
+    cameraConfig.fps,
+    frameBuffer,
+    detectionBuffer)
 
-    signal.signal(signal.SIGINT, HandleSignal)
+videoCaptureThread.start()
+videoStreamerThread.start()
+detectionThread.start()
+detectionSenderThread.start()
 
-    renderer = DebugRenderer(frameBuffer, detectionResultBuffer)
-    renderer.mode = "matplotlib"
+pyglet.app.run()
 
-    while True:
-        renderer.render()
+signal.signal(signal.SIGINT, HandleSignal)

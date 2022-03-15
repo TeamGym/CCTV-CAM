@@ -3,8 +3,9 @@ import sys
 
 import configparser
 
-from StreamingServerConfig import StreamingServerConfig
-from DetectionServerConfig import DetectionServerConfig
+from Config.StreamingServerConfig import StreamingServerConfig
+from Config.DetectionServerConfig import DetectionServerConfig
+from Config.HTTPServerConfig import HTTPServerConfig
 
 class ServerConfigLoader:
     def __init__(self, filePath : str = ""):
@@ -21,19 +22,26 @@ class ServerConfigLoader:
 
         sections = config.sections()
         
-        if not 'DetectionServer' in sections:
+        if not 'Detection' in sections:
             print("[ServerConfigLoader::Load]: invalid config file. ('DetectionServer' section doesn't exist.)")
             sys.exit(1)
 
-        if not 'StreamingServer' in sections:
+        if not 'Streaming' in sections:
             print("[ServerConfigLoader::Load]: invalid config file. ('StreamingServer' section doesn't exist.)")
+            sys.exit(1)
+            
+        if not 'HTTP' in sections:
+            print("[ServerConfigLoader::Load]: invalid config file. ('HTTPServer' section doesn't exist.)")
             sys.exit(1)
 
         self.detection = DetectionServerConfig()
         self.streaming = StreamingServerConfig()
+        self.http = HTTPServerConfig()
 
-        self.detection.host = config['DetectionServer']['host']
-        self.detection.port = int(config['DetectionServer']['port'])
+        self.detection.host = config['Detection']['host']
+        self.detection.port = int(config['Detection']['port'])
 
-        self.streaming.service = config['StreamingServer']['service']
-        self.streaming.mountpoint = config['StreamingServer']['mountpoint']
+        self.streaming.host = config['Streaming']['host']
+        self.streaming.port = int(config['Streaming']['port'])
+
+        self.http.url = config['HTTP']['url']

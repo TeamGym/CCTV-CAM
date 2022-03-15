@@ -1,9 +1,9 @@
-from Config import Config
+from Config.Config import Config
 
 class DetectionServerConfig(Config):
     def __init__(self,
-                 host : str = "0.0.0.0",
-                 port : int = "5000"):
+                 host : str = "127.0.0.1",
+                 port : int = "50001"):
         super().__init__()
 
         self.__host = host
@@ -16,3 +16,11 @@ class DetectionServerConfig(Config):
     @host.setter
     def host(self, value):
         self.__host = value
+
+    @property
+    def port(self):
+        return self.__port
+
+    @port.setter
+    def port(self, value):
+        self.__port = value

@@ -21,6 +21,17 @@ class DetectionBox:
         self.__classID = classID
         self.__label = label
 
+    def as_dict(self):
+        return {
+            'x': self.x,
+            'y': self.y,
+            'width': self.width,
+            'height': self.height,
+            'confidence': self.confidence,
+            'classID': self.classID,
+            'label': self.label
+        }
+
     @property
     def x(self):
         return self.__x
