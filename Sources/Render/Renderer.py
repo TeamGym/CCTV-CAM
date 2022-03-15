@@ -1,31 +1,28 @@
 from Core.Buffer import Buffer
 
 import cv2
-import matplotlib.pyplot as plt
-import matplotlib.image as img
+import numpy as np
+import pyglet
+from pyglet.gl import *
 
 import random
+import ctypes
 
-class DebugRenderer:
+class Renderer(pyglet.window.Window):
     def __init__(self,
+                 width : int,
+                 height : int,
+                 framerate : int,
                  frameBuffer : Buffer,
                  detectionBuffer : Buffer):
+        super().__init__(width=width, height=height)
+
+        pyglet.clock.schedule_interval(self.update, 1.0 / framerate)
+
         self.frameBuffer = frameBuffer
         self.detectionBuffer = detectionBuffer
 
-        self.renderContext = None
-
         self.colors = {}
-        
-        self.__mode = "matplotlib"
-
-    @property
-    def mode(self):
-        return self.__mode
-
-    @mode.setter
-    def mode(self, value):
-        self.__mode = value
 
     def draw_box(self, image, box):
         x, y = box.x, box.y
@@ -47,20 +44,26 @@ class DebugRenderer:
         cv2.rectangle(image, (left, top), (right, bottom), color, 2)
         cv2.putText(image, text, (left, top - 5), cv2.FONT_HERSHEY_SIMPLEX,
                     0.5, color, 1)
-                
-    def render(self):
+
+    def update(self, deltaTime):
+        pass
+
+    def on_key_press(self, symbol, modifiers):
+        symbol = chr(symbol)
+        if symbol == 'q':
+            self.close()
+
+    def on_mouse_press(self, x, y, button, modifiers):
+        pass
+
+    def on_draw(self):
+        pyglet.clock.tick()
+
         if self.frameBuffer.size == 0:
             return
 
-        if self.mode == "opencv":
-            self.render_opencv()
-        elif self.mode == "matplotlib":
-            self.render_matplotlib()
-
-    def render_opencv(self):
         frame = self.frameBuffer.tail()
         image = frame.data
-
         image = image.copy()
 
         if self.detectionBuffer.size != 0:
@@ -69,22 +72,13 @@ class DebugRenderer:
             for box in detection.boxes:
                 self.draw_box(image, box)
 
-    def render_matplotlib(self):
-        frame = self.frameBuffer.tail()
-        timestamp = frame.timestamp
-        
-        image = frame.data
-        image = image.copy()
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        image = np.flip(image, axis=0)
 
-        if self.detectionBuffer.size != 0:
-            detection = self.detectionBuffer.tail()
+        glClearColor(0, 0, 0, 1)
+        glClear(GL_COLOR_BUFFER_BIT)
 
-            for box in detection.boxes:
-                self.draw_box(image, box)
+        data = image.astype(np.uint8)
+        dataPtr = data.ctypes.data_as(ctypes.POINTER(ctypes.c_ubyte))
 
-        if self.renderContext == None:
-            self.renderContext = plt.imshow(image)
-            
-        self.renderContext.set_array(image)
-        plt.pause(0.0001)
+        glDrawPixels(self.width, self.height, GL_RGB, GL_UNSIGNED_BYTE, dataPtr)

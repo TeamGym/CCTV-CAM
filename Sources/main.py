@@ -15,18 +15,19 @@ from Detect.Detector import Detector
 from Network.VideoStreamer import VideoStreamer
 from Network.DetectionSender import DetectionSender
 
-from Capture.VideoCaptureThread import VideoCaptureThread
-from Network.VideoStreamerThread import VideoStreamerThread
-from Network.DetectionSenderThread import DetectionSenderThread
-from Detect.DetectionThread import DetectionThread
+from VideoCaptureThread import VideoCaptureThread
+from VideoStreamerThread import VideoStreamerThread
+from DetectionSenderThread import DetectionSenderThread
+from DetectionThread import DetectionThread
 
 from Detect.Detection import Detection
 
-from Render.DebugRenderer import DebugRenderer
+from Render.Renderer import Renderer
 
 import signal
 import sys
 import time
+import pyglet
 
 def HandleSignal(signal, frame):
     print("Signal detected.")
@@ -36,13 +37,13 @@ frameBuffer = StaticTypeCircularBuffer(Frame, 64)
 detectionBuffer = StaticTypeCircularBuffer(Detection, 64)
 
 cameraConfig = CameraConfig()
-cameraConfig.load("Config/pengca1080p.ini")
+cameraConfig.load("laptopWebcam.ini")
 
 detectorConfig = DetectorConfig()
-detectorConfig.load("Config/yolov4-tiny.ini")
+detectorConfig.load("yolo-gun.ini")
 
 serverConfigLoader = ServerConfigLoader()
-serverConfigLoader.load("Config/main-server.ini")
+serverConfigLoader.load("main-server.ini")
 
 streamingServerConfig = serverConfigLoader.streaming
 detectionServerConfig = serverConfigLoader.detection
@@ -83,18 +84,18 @@ detectionSender = DetectionSender(
     detectionBuffer)
 detectionSenderThread = DetectionSenderThread(detectionSender)
 
+renderer = Renderer(
+    cameraConfig.width,
+    cameraConfig.height,
+    cameraConfig.fps,
+    frameBuffer,
+    detectionBuffer)
+
 videoCaptureThread.start()
 videoStreamerThread.start()
 detectionThread.start()
 detectionSenderThread.start()
 
+pyglet.app.run()
+
 signal.signal(signal.SIGINT, HandleSignal)
-
-"""
-renderer = DebugRenderer(frameBuffer, detectionBuffer)
-renderer.mode = "matplotlib"
-
-while True:
-    renderer.render()
-    time.sleep(0.01)
-"""
