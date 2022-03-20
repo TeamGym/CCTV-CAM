@@ -1,0 +1,6 @@
+{
+    "label": "darknet/data/coco.names",
+    "config": "darknet/cfg/yolov4-tiny.cfg",
+    "weights": "darknet/weights/yolov4-tiny.weights",
+    "confidenceThreshold": 0.3
+}

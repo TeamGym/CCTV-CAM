@@ -1,0 +1,7 @@
+{
+    "device": "/dev/video2",
+    "width": 640,
+    "height": 480,
+    "fps": 30,
+    "format": "YUY2"
+}
