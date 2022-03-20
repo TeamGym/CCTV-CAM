@@ -1,40 +1,33 @@
 #!/usr/bin/python3
 
-from Core.StaticTypeCircularBuffer import StaticTypeCircularBuffer
-from Core.Frame import Frame
-
+from Config.Config import Config
 from Config.CameraConfig import CameraConfig
 from Config.DetectorConfig import DetectorConfig
 from Config.ServerConfigLoader import ServerConfigLoader
-from Config.StreamingServerConfig import StreamingServerConfig
-from Config.DetectionServerConfig import DetectionServerConfig
-from Config.HTTPServerConfig import HTTPServerConfig
+from Config.RTSPServerConfig import RTSPServerConfig
+from Config.TCPServerConfig import TCPServerConfig
+
+from MainContext import MainContext
 
 from Capture.VideoCapture import VideoCapture
 from Detect.Detector import Detector
 from Network.VideoStreamer import VideoStreamer
 from Network.DetectionSender import DetectionSender
 
-from VideoCaptureThread import VideoCaptureThread
-from VideoStreamerThread import VideoStreamerThread
-from DetectionSenderThread import DetectionSenderThread
-from DetectionThread import DetectionThread
-
-from Detect.Detection import Detection
+from Thread.VideoCaptureThread import VideoCaptureThread
+from Thread.VideoStreamerThread import VideoStreamerThread
+from Thread.DetectionSenderThread import DetectionSenderThread
+from Thread.DetectionThread import DetectionThread
 
 from Render.Renderer import Renderer
 
 import signal
 import sys
-import time
 import pyglet
 
 def HandleSignal(signal, frame):
     print("Signal detected.")
     sys.exit(0)
-
-frameBuffer = StaticTypeCircularBuffer(Frame, 64)
-detectionBuffer = StaticTypeCircularBuffer(Detection, 64)
 
 cameraConfig = CameraConfig()
 cameraConfig.load("laptopWebcam.ini")
@@ -45,25 +38,23 @@ detectorConfig.load("yolo-gun.ini")
 serverConfigLoader = ServerConfigLoader()
 serverConfigLoader.load("main-server.ini")
 
-streamingServerConfig = serverConfigLoader.streaming
-detectionServerConfig = serverConfigLoader.detection
-httpServerConfig = serverConfigLoader.http
+rtspServerConfig = serverConfigLoader.rtsp
+tcpServerConfig = serverConfigLoader.tcp
 
-videoCapture = VideoCapture(
+context = MainContext(
     cameraConfig.device,
     cameraConfig.width,
     cameraConfig.height,
     cameraConfig.fps,
     cameraConfig.format,
-    frameBuffer)
+    rtspServerConfig.location,
+    tcpServerConfig.host,
+    tcpServerConfig.port)
+
+videoCapture = VideoCapture(context)
 videoCaptureThread = VideoCaptureThread(videoCapture)
 
-videoStreamer =  VideoStreamer(
-    cameraConfig.width,
-    cameraConfig.height,
-    cameraConfig.fps,
-    streamingServerConfig.location,
-    frameBuffer)
+videoStreamer =  VideoStreamer(context)
 videoStreamerThread = VideoStreamerThread(videoStreamer)
 
 detector = Detector(
@@ -71,25 +62,14 @@ detector = Detector(
     detectorConfig.config,
     detectorConfig.weights,
     detectorConfig.confidenceThreshold,
-    frameBuffer,
-    detectionBuffer)
+    context.frameBuffer,
+    context.detectionBuffer)
 detectionThread = DetectionThread(detector)
 
-detectionSender = DetectionSender(
-    detectionServerConfig.host,
-    detectionServerConfig.port,
-    httpServerConfig.url,
-    cameraConfig.width,
-    cameraConfig.height,
-    detectionBuffer)
+detectionSender = DetectionSender(context)
 detectionSenderThread = DetectionSenderThread(detectionSender)
 
-renderer = Renderer(
-    cameraConfig.width,
-    cameraConfig.height,
-    cameraConfig.fps,
-    frameBuffer,
-    detectionBuffer)
+renderer = Renderer(context)
 
 videoCaptureThread.start()
 videoStreamerThread.start()

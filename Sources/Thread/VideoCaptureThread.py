@@ -12,4 +12,3 @@ class VideoCaptureThread(Thread):
     def run(self):
         while True:
             self.capture.read()
-            

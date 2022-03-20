@@ -1,6 +1,6 @@
 from Config.Config import Config
 
-class DetectionServerConfig(Config):
+class TCPServerConfig(Config):
     def __init__(self,
                  host : str = "127.0.0.1",
                  port : int = "50001"):
