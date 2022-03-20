@@ -1,12 +1,5 @@
 #!/usr/bin/python3
-
-from Config.Config import Config
-from Config.CameraConfig import CameraConfig
-from Config.DetectorConfig import DetectorConfig
-from Config.ServerConfigLoader import ServerConfigLoader
-from Config.RTSPServerConfig import RTSPServerConfig
-from Config.TCPServerConfig import TCPServerConfig
-
+from Config.JSONConfig import JSONConfig
 from MainContext import MainContext
 
 from Capture.VideoCapture import VideoCapture
@@ -29,17 +22,9 @@ def HandleSignal(signal, frame):
     print("Signal detected.")
     sys.exit(0)
 
-cameraConfig = CameraConfig()
-cameraConfig.load("laptopWebcam.ini")
-
-detectorConfig = DetectorConfig()
-detectorConfig.load("yolo-gun.ini")
-
-serverConfigLoader = ServerConfigLoader()
-serverConfigLoader.load("main-server.ini")
-
-rtspServerConfig = serverConfigLoader.rtsp
-tcpServerConfig = serverConfigLoader.tcp
+cameraConfig = JSONConfig("laptopWebcam.json")
+detectorConfig = JSONConfig("yolo-gun.json")
+serverConfig = JSONConfig("remote-test-server.json")
 
 context = MainContext(
     cameraConfig.device,
@@ -47,10 +32,9 @@ context = MainContext(
     cameraConfig.height,
     cameraConfig.fps,
     cameraConfig.format,
-    rtspServerConfig.location,
-    tcpServerConfig.host,
-    tcpServerConfig.port)
-
+    serverConfig.rtspLocation,
+    serverConfig.tcpHost,
+    serverConfig.tcpPort)
 videoCapture = VideoCapture(context)
 videoCaptureThread = VideoCaptureThread(videoCapture)
 

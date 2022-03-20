@@ -19,4 +19,3 @@ class Config:
         for section in sections:
             for key in config[section]:
                 setattr(self, key, config[section][key])
-                
