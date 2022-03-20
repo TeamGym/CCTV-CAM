@@ -3,14 +3,15 @@ from Config.JSONConfig import JSONConfig
 from MainContext import MainContext
 
 from Capture.VideoCapture import VideoCapture
-from Detect.Detector import Detector
+from Detect.MotionDetector import MotionDetector
+from Detect.ObjectDetector import ObjectDetector
 from Network.VideoStreamer import VideoStreamer
 from Network.DetectionSender import DetectionSender
 
 from Thread.VideoCaptureThread import VideoCaptureThread
 from Thread.VideoStreamerThread import VideoStreamerThread
+from Thread.DetectorThread import DetectorThread
 from Thread.DetectionSenderThread import DetectionSenderThread
-from Thread.DetectionThread import DetectionThread
 
 from Render.Renderer import Renderer
 
@@ -41,14 +42,18 @@ videoCaptureThread = VideoCaptureThread(videoCapture)
 videoStreamer =  VideoStreamer(context)
 videoStreamerThread = VideoStreamerThread(videoStreamer)
 
-detector = Detector(
+motionDetector = MotionDetector(
+    context.frameBuffer,
+    context.differenceBuffer)
+objectDetector = ObjectDetector(
     detectorConfig.label,
     detectorConfig.config,
     detectorConfig.weights,
     detectorConfig.confidenceThreshold,
-    context.frameBuffer,
+    context.differenceBuffer,
     context.detectionBuffer)
-detectionThread = DetectionThread(detector)
+motionDetectorThread = DetectorThread(motionDetector)
+objectDetectorThread = DetectorThread(objectDetector)
 
 detectionSender = DetectionSender(context)
 detectionSenderThread = DetectionSenderThread(detectionSender)
@@ -57,7 +62,8 @@ renderer = Renderer(context)
 
 videoCaptureThread.start()
 videoStreamerThread.start()
-detectionThread.start()
+motionDetectorThread.start()
+objectDetectorThread.start()
 detectionSenderThread.start()
 
 pyglet.app.run()
