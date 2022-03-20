@@ -10,11 +10,12 @@ import ctypes
 
 class Renderer(pyglet.window.Window):
     def __init__(self, context):
-        super().__init__(width=context.width, height=context.height)
+        super().__init__(width=context.width * 2, height=context.height)
 
         pyglet.clock.schedule_interval(self.update, 1.0 / context.fps)
 
         self.__frameBuffer = context.frameBuffer
+        self.__differenceBuffer = context.differenceBuffer
         self.__detectionBuffer = context.detectionBuffer
 
         self.__colors = {}
@@ -62,9 +63,18 @@ class Renderer(pyglet.window.Window):
         if self.__frameBuffer.size == 0:
             return
 
+        if self.__differenceBuffer.size == 0:
+            return
+
+        glClearColor(0, 0, 0, 1)
+        glClear(GL_COLOR_BUFFER_BIT)
+
         frame = self.__frameBuffer.tail()
         image = frame.data
         image = image.copy()
+
+        maskedFrame = self.__differenceBuffer.tail()
+        maskedImage = maskedFrame.data
 
         if self.__detectionBuffer.size != 0:
             detection = self.__detectionBuffer.tail()
@@ -74,11 +84,10 @@ class Renderer(pyglet.window.Window):
 
         self.draw_timestamp(image, frame.timestamp)
 
+        image = np.hstack([image, maskedImage])
+
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         image = np.flip(image, axis=0)
-
-        glClearColor(0, 0, 0, 1)
-        glClear(GL_COLOR_BUFFER_BIT)
 
         data = image.astype(np.uint8)
         dataPtr = data.ctypes.data_as(ctypes.POINTER(ctypes.c_ubyte))

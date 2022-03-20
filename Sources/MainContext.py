@@ -23,6 +23,7 @@ class MainContext:
         self.__tcpPort = tcpPort
 
         self.__frameBuffer = StaticTypeCircularBuffer(Frame, 64)
+        self.__differenceBuffer = StaticTypeCircularBuffer(Frame, 64)
         self.__detectionBuffer = StaticTypeCircularBuffer(Detection, 64)
         self.__commandQueue = Queue()
 
@@ -64,6 +65,10 @@ class MainContext:
     @property
     def frameBuffer(self):
         return self.__frameBuffer
+
+    @property
+    def differenceBuffer(self):
+        return self.__differenceBuffer
 
     @property
     def detectionBuffer(self):
