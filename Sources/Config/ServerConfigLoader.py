@@ -3,9 +3,8 @@ import sys
 
 import configparser
 
-from Config.StreamingServerConfig import StreamingServerConfig
-from Config.DetectionServerConfig import DetectionServerConfig
-from Config.HTTPServerConfig import HTTPServerConfig
+from Config.RTSPServerConfig import RTSPServerConfig
+from Config.TCPServerConfig import TCPServerConfig
 
 class ServerConfigLoader:
     def __init__(self, filePath : str = ""):
@@ -16,32 +15,27 @@ class ServerConfigLoader:
         if not os.path.isfile(filePath):
             print("[ServerConfigLoader::load]: {} is not file.".format(filePath))
             sys.exit(1)
-                  
+
         config = configparser.ConfigParser()
         config.read(filePath)
 
         sections = config.sections()
-        
-        if not 'Detection' in sections:
-            print("[ServerConfigLoader::Load]: invalid config file. ('DetectionServer' section doesn't exist.)")
+
+        if not 'TCP' in sections:
+            print("[ServerConfigLoader::Load]: invalid config file. ('TCP' section doesn't exist.)")
             sys.exit(1)
 
-        if not 'Streaming' in sections:
-            print("[ServerConfigLoader::Load]: invalid config file. ('StreamingServer' section doesn't exist.)")
-            sys.exit(1)
-            
-        if not 'HTTP' in sections:
-            print("[ServerConfigLoader::Load]: invalid config file. ('HTTPServer' section doesn't exist.)")
+        if not 'RTSP' in sections:
+            print("[ServerConfigLoader::Load]: invalid config file. ('RTSP' section doesn't exist.)")
             sys.exit(1)
 
-        self.detection = DetectionServerConfig()
-        self.streaming = StreamingServerConfig()
-        self.http = HTTPServerConfig()
 
-        self.detection.host = config['Detection']['host']
-        self.detection.port = int(config['Detection']['port'])
+        self.tcp = TCPServerConfig()
+        self.rtsp = RTSPServerConfig()
 
-        self.streaming.host = config['Streaming']['host']
-        self.streaming.port = int(config['Streaming']['port'])
 
-        self.http.url = config['HTTP']['url']
+        self.tcp.host = config['TCP']['host']
+        self.tcp.port = int(config['TCP']['port'])
+
+        self.rtsp.host = config['RTSP']['host']
+        self.rtsp.port = int(config['RTSP']['port'])

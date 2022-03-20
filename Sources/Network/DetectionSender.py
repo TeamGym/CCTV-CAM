@@ -10,48 +10,26 @@ from Detect.DetectionBox import DetectionBox
 from Detect.Detection import Detection
 
 class DetectionSender:
-    def __init__(self,
-                 host : str,
-                 port : int,
-                 url : str,
-                 videoWidth : int,
-                 videoHeight : int,
-                 detectionBuffer : Buffer):
-        
-        self.host = host
-        self.port = port
+    def __init__(self, context):
 
-        self.url = url
+        self.context = context
 
-        self.videoWidth = videoWidth
-        self.videoHeight = videoHeight
+        self.host = context.tcpHost
+        self.port = context.tcpPort
 
-        self.detectionBuffer = detectionBuffer
+        self.videoWidth = context.width
+        self.videoHeight = context.height
 
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)        
+        self.detectionBuffer = context.detectionBuffer
+
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.settimeout(10)
-        
+
         self.latestTimestamp = 0
 
     def connect(self):
-        """
-        statusCode = ""
         while True:
-            try:
-                response = requests.post(self.url, "record")
-                statusCode = response.status_code
-
-                if statusCode.startsWith("2"):
-                    break
-
-                print("[DetectionSender]: Can't connect HTTP server, wait 3 second.")
-                time.sleep(3)
-            except:
-                print("[DetectionSender]: Can't connect HTTP server, wait 3 second.")
-                time.sleep(3)
-        """
-        
-        while True:
+            self.context.tcpStatus = "Connecting"
             try:
                 if self.socket.connect_ex((self.host, self.port)):
                     print("[DetectionSender]: Can't connect TCP server, wait 3 second.")
@@ -78,7 +56,9 @@ class DetectionSender:
 
         self.socket.sendall(cctvInfo)
 
-        while True:        
+        self.context.tcpStatus = "Connected"
+
+        while True:
             if self.detectionBuffer.size <= 0:
                 time.sleep(0.1)
                 continue
@@ -106,15 +86,14 @@ class DetectionSender:
             self.socket.send(data)
 
     def communicate_automatically(self):
-         self.connect()
-         
-         while True:
+        self.context.tcpStatus = "Unconnected"
+        self.connect()
+
+        while True:
             try:
                 self.communicate()
             except OSError as e:
                 print("[DetectionSenderThread]: Unexpected error. Attempt to re-connect.(Error: {})".format(e), file=sys.stderr)
+
+                self.context.tcpStatus = "Unconnected"
                 self.connect()
-
-
-            
-

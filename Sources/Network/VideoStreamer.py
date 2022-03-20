@@ -1,34 +1,26 @@
 import sys
+import numpy as np
 
 from Core.Buffer import Buffer
-
-from Config.StreamingServerConfig import StreamingServerConfig
-from Config.CameraConfig import CameraConfig
 
 import gi
 
 gi.require_version('Gst', '1.0')
 from gi.repository import Gst, GObject
 
-import numpy as np
-
 class VideoStreamer:
-    def __init__(self,
-                 width : int,
-                 height : int,
-                 fps : int,
-                 location : str,
-                 framebuffer : Buffer):
+    def __init__(self, context):
+        self.context = context
 
-        self.width = width
-        self.height = height
-        self.fps = fps
+        self.width = context.width
+        self.height = context.height
+        self.fps = context.fps
 
-        self.location = location
+        self.location = context.rtspLocation
 
         self.duration = 1 / self.fps * Gst.SECOND
-        
-        self.framebuffer = framebuffer
+
+        self.framebuffer = context.frameBuffer
         self.frameCount = 0
 
         GObject.threads_init()
@@ -41,7 +33,7 @@ class VideoStreamer:
             "rtspclientsink name=m_sink" \
             .format(self.width, self.height, self.fps, self.fps))
         self.bus = self.pipeline.get_bus()
-        
+
         source = self.pipeline.get_by_name('m_src')
         source.set_property('is-live', True)
         source.set_property('block', True)
@@ -53,22 +45,36 @@ class VideoStreamer:
 
         sink = self.pipeline.get_by_name('m_sink')
         sink.set_property('location', self.location)
-        
+
         #sink.set_property('debug', 1)
 
     def close_pipeline(self):
         pass
-        
+
     def get_message(self):
         message = self.bus.timed_pop(Gst.SECOND)
 
-        if message.type == Gst.MessageType.WARNING or \
-           message.type == Gst.MessageType.EOS or \
-           message.type == Gst.MessageType.ERROR:
 
+        if message is not None and message.type in [Gst.MessageType.EOS, Gst.MessageType.ERROR]:
             print("[VideoStreamer]: Can't stream video to server.", file=sys.stderr)
+
             self.pipeline.set_state(Gst.State.NULL)
             self.pipeline.set_state(Gst.State.PLAYING)
+
+        tcpStatus = self.context.tcpStatus
+        rtspStatus = self.context.rtspStatus
+
+        if tcpStatus != "Connected":
+            rtspStatus = "Unconnected"
+            self.pipeline.set_state(Gst.State.NULL)
+
+            print("[VideoStreamer]: Can't stream video to server.", file=sys.stderr)
+
+        if rtspStatus == "Unconnected" and tcpStatus == "Connected":
+            self.pipeline.set_state(Gst.State.PLAYING)
+            self.rtspStatus = "Connected"
+
+            print("[VideoStreamer]: re-start streaming.")
 
         return True
 
@@ -86,11 +92,11 @@ class VideoStreamer:
         else:
             frame = self.framebuffer.tail()
             data = frame.data
-            
+
         data = data.tostring()
-        
+
         outerTimestamp = self.frameCount * self.duration
-        
+
         buffer = Gst.Buffer.new_allocate(None, len(data), None)
         buffer.fill(0, data)
         buffer.duration = self.duration

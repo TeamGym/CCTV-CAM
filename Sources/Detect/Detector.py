@@ -9,29 +9,59 @@ from Core.Frame import Frame
 from Detect.DetectionBox import DetectionBox
 from Detect.Detection import Detection
 
-class Detector(Thread):
+class Detector:
     def __init__(self,
                  labelFileName : str,
                  configFileName : str,
                  weightsFileName : str,
                  confidenceThreshold : int,
-                 frameBuffer : Buffer,
-                 detectionBuffer : Buffer):
-        super().__init__()
+                 readBuffer : Buffer,
+                 writeBuffer : Buffer):
+        self.__network = cv2.dnn.readNetFromDarknet(configFileName, weightsFileName)
+        self.__labels = open(labelFileName).read().strip().split("\n")
+        self.__confidenceThreshold = confidenceThreshold
+        self.__layerNames = [self.__network.getLayerNames()[layer - 1] for layer in self.__network.getUnconnectedOutLayers()]
 
-        self.network = cv2.dnn.readNetFromDarknet(configFileName, weightsFileName)
-        self.labels = open(labelFileName).read().strip().split("\n")        
-        self.confidenceThreshold = confidenceThreshold
-        self.layerNames = [self.network.getLayerNames()[layer - 1] for layer in self.network.getUnconnectedOutLayers()]
+        self.__readBuffer = readBuffer
+        self.__writeBuffer = writeBuffer
 
-        self.frameBuffer = frameBuffer
-        self.detectionBuffer = detectionBuffer
+    @property
+    def network(self):
+        return self.__network
+
+    @property
+    def labels(self):
+        return self.__labels
+
+    @property
+    def confidenceThreshold(self):
+        return self.__confidenceThreshold
+
+    @confidenceThreshold.setter
+    def confidenceThreshold(self, value):
+        self.__confidenceThreshold = value
+
+    @property
+    def readBuffer(self):
+        return self.__readBuffer
+
+    @readBuffer.setter
+    def readBuffer(self, value):
+        self.__readBuffer = value
+
+    @property
+    def writeBuffer(self):
+        return self.__writeBuffer
+
+    @writeBuffer.setter
+    def writeBuffer(self, value):
+        self.__writeBuffer = value
 
     def detect(self):
-        if self.frameBuffer.size == 0:
+        if self.__readBuffer.size == 0:
             return
 
-        frame = self.frameBuffer.tail()
+        frame = self.__readBuffer.tail()
 
         timestamp = frame.timestamp
         image = frame.data
@@ -39,9 +69,9 @@ class Detector(Thread):
         (H, W) = image.shape[:2]
 
         blob = cv2.dnn.blobFromImage(image, 1 / 255.0, (416, 416), swapRB=True, crop=False)
-        self.network.setInput(blob)
+        self.__network.setInput(blob)
 
-        layerOutputs = self.network.forward(self.layerNames)
+        layerOutputs = self.__network.forward(self.__layerNames)
 
         boxes = []
         classIDs = []
@@ -53,7 +83,7 @@ class Detector(Thread):
                 classID = np.argmax(scores)
                 confidence = scores[classID]
 
-                if confidence > self.confidenceThreshold:
+                if confidence > self.__confidenceThreshold:
                     box = detection[:4] * np.array([W, H, W, H])
                     (centerX, centerY, width, height) = box.astype('int')
 
@@ -69,8 +99,8 @@ class Detector(Thread):
 
         idxs = cv2.dnn.NMSBoxes(boxes,
                                 confidences,
-                                self.confidenceThreshold,
-                                self.confidenceThreshold)
+                                self.__confidenceThreshold,
+                                self.__confidenceThreshold)
 
         detectionBoxes = []
 
@@ -86,10 +116,10 @@ class Detector(Thread):
                     x, y, w, h,
                     confidence,
                     classID,
-                    self.labels[classID])
+                    self.__labels[classID])
                 detectionBoxes.append(detectionBox)
 
         detection = Detection(detectionBoxes, timestamp)
-        self.detectionBuffer.add(detection)
+        self.__writeBuffer.add(detection)
 
         #print("[DetectionThread]: Object detection completed.(timestamp: {}, boxes: {})".format(timestamp, len(detectionBoxes)))

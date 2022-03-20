@@ -1,6 +1,6 @@
 from Config.Config import Config
 
-class StreamingServerConfig(Config):
+class RTSPServerConfig(Config):
     def __init__(self,
                  location : str = ""):
         super().__init__()
@@ -10,7 +10,7 @@ class StreamingServerConfig(Config):
     @property
     def location(self):
         return self.__location
-    
+
     @location.setter
     def location(self, value):
         self.__location = value

@@ -2,11 +2,6 @@ import sys
 
 from threading import Thread
 
-from Core.Buffer import Buffer
-
-from Config.StreamingServerConfig import StreamingServerConfig
-from Config.CameraConfig import CameraConfig
-
 from Network.VideoStreamer import VideoStreamer
 
 import gi
@@ -23,6 +18,6 @@ class VideoStreamerThread(Thread):
     def run(self):
         self.streamer.build_pipeline()
         self.streamer.ready()
-        
+
         gLoop = GObject.MainLoop()
         gLoop.run()
