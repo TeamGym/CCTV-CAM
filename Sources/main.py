@@ -6,12 +6,12 @@ from Capture.VideoCapture import VideoCapture
 from Detect.MotionDetector import MotionDetector
 from Detect.ObjectDetector import ObjectDetector
 from Network.VideoStreamer import VideoStreamer
-from Network.DetectionSender import DetectionSender
+from Network.RemoteServerConnector import RemoteServerConnector
 
 from Thread.VideoCaptureThread import VideoCaptureThread
 from Thread.VideoStreamerThread import VideoStreamerThread
 from Thread.DetectorThread import DetectorThread
-from Thread.DetectionSenderThread import DetectionSenderThread
+from Thread.RemoteServerConnectorThread import RemoteServerConnectorThread
 
 from Render.Renderer import Renderer
 
@@ -50,13 +50,13 @@ objectDetector = ObjectDetector(
     detectorConfig.config,
     detectorConfig.weights,
     detectorConfig.confidenceThreshold,
-    context.differenceBuffer,
+    context.frameBuffer,
     context.detectionBuffer)
 motionDetectorThread = DetectorThread(motionDetector)
 objectDetectorThread = DetectorThread(objectDetector)
 
-detectionSender = DetectionSender(context)
-detectionSenderThread = DetectionSenderThread(detectionSender)
+remoteServerConnector = RemoteServerConnector(context)
+connectorThread = RemoteServerConnectorThread(remoteServerConnector)
 
 renderer = Renderer(context)
 
@@ -64,7 +64,7 @@ videoCaptureThread.start()
 videoStreamerThread.start()
 motionDetectorThread.start()
 objectDetectorThread.start()
-detectionSenderThread.start()
+connectorThread.start()
 
 pyglet.app.run()
 
