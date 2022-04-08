@@ -1,3 +1,5 @@
 class RemoteDeviceController:
     def __init__(self, context):
-        self.commandQueue = context.commandQueue
+        self.__commandQueue = context.commandQueue
+        self.__audioDeviceController = context.audioDeviceController
+        self.__cameraDeviceController = context.cameraDeviceController
