@@ -2,5 +2,5 @@
     "label": "darknet/data/yolo-gun.names",
     "config": "darknet/cfg/yolov3-gun.cfg",
     "weights": "darknet/weights/yolov3-gun.weights",
-    "confidenceThreshold": 0.3
+    "confidenceThreshold": 0.4
 }

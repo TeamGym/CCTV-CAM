@@ -1,5 +1,6 @@
-from Core.StaticTypeCircularBuffer import StaticTypeCircularBuffer
+from Core.CircularBuffer import CircularBuffer
 from Core.Frame import Frame
+from Core.FrameBuffer import FrameBuffer
 from Detect.Detection import Detection
 from queue import Queue
 
@@ -22,9 +23,13 @@ class MainContext:
         self.__tcpHost = tcpHost
         self.__tcpPort = tcpPort
 
-        self.__frameBuffer = StaticTypeCircularBuffer(Frame, 64)
-        self.__differenceBuffer = StaticTypeCircularBuffer(Frame, 64)
-        self.__detectionBuffer = StaticTypeCircularBuffer(Detection, 64)
+        self.__frameBuffer = FrameBuffer(width=width,
+                                         height=height,
+                                         maxlen=500)
+        self.__differenceBuffer = FrameBuffer(width=width,
+                                              height=height,
+                                              maxlen=500)
+        self.__detectionBuffer = CircularBuffer(maxlen=500)
         self.__commandQueue = Queue()
 
         self.__rtspStatus = "Unconnected"

@@ -1,16 +1,13 @@
 import sys
-
-from threading import Thread
-
-from Core.Buffer import Buffer
-from Core.Frame import Frame
-
 import cv2
+
+from Core.Frame import Frame
+from Core.FrameBuffer import FrameBuffer
 
 import gi
 
 gi.require_version('Gst', '1.0')
-from gi.repository import Gst
+from gi.repository import Gst, GObject
 
 class VideoCapture(object):
     def __init__(self, context):
@@ -27,7 +24,18 @@ class VideoCapture(object):
 
         self.ready()
 
-        self.__frameBuffer = context.frameBuffer
+        self.__writeBuffer = context.frameBuffer
+        self.__monitorBuffer = FrameBuffer(self.__width,
+                                           self.__height,
+                                           maxlen=500)
+
+    @property
+    def writeBuffer(self):
+        return self.__writeBuffer
+
+    @property
+    def monitorBuffer(self):
+        return self.__monitorBuffer
 
     @property
     def device(self):
@@ -71,6 +79,8 @@ class VideoCapture(object):
         timestamp = self.__frameCount * self.__duration
 
         frame = Frame(timestamp, frame)
-        self.__frameBuffer.add(frame)
+
+        self.writeBuffer.push(frame)
+        self.monitorBuffer.push(frame)
 
         self.__frameCount += 1

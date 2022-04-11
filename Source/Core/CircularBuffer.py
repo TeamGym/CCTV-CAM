@@ -1,15 +1,11 @@
-import os
-if os.path.dirname(os.path.abspath(__file__)) == os.getcwd():
-    from Buffer import Buffer
-else:
-    from .Buffer import Buffer
-
 from collections import deque
+
+from Core.Buffer import Buffer
 
 class CircularBuffer(Buffer):
     def __init__(self, maxlen):
         super().__init__()
-        
+
         self.__maxlen = maxlen
         self.rawbuffer = deque(maxlen=maxlen)
 

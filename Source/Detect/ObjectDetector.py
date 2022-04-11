@@ -1,8 +1,9 @@
 import cv2
 import numpy as np
+import random
 
-from Core.Buffer import Buffer
 from Core.Frame import Frame
+from Core.FrameBuffer import FrameBuffer
 
 from Detect.DetectionBox import DetectionBox
 from Detect.Detection import Detection
@@ -13,15 +14,20 @@ class ObjectDetector:
                  configFileName : str,
                  weightsFileName : str,
                  confidenceThreshold : int,
-                 readBuffer : Buffer,
-                 writeBuffer : Buffer):
+                 context):
         self.__network = cv2.dnn.readNetFromDarknet(configFileName, weightsFileName)
         self.__labels = open(labelFileName).read().strip().split("\n")
         self.__confidenceThreshold = confidenceThreshold
         self.__layerNames = [self.__network.getLayerNames()[layer - 1] for layer in self.__network.getUnconnectedOutLayers()]
+        self.__colors = {}
 
-        self.__readBuffer = readBuffer
-        self.__writeBuffer = writeBuffer
+        self.__readBuffer = context.frameBuffer
+        self.__writeBuffer = context.detectionBuffer
+        self.__monitorBuffer = FrameBuffer(width=context.width,
+                                           height=context.height,
+                                           maxlen=500)
+
+
 
     @property
     def network(self):
@@ -43,17 +49,35 @@ class ObjectDetector:
     def readBuffer(self):
         return self.__readBuffer
 
-    @readBuffer.setter
-    def readBuffer(self, value):
-        self.__readBuffer = value
-
     @property
     def writeBuffer(self):
         return self.__writeBuffer
 
-    @writeBuffer.setter
-    def writeBuffer(self, value):
-        self.__writeBuffer = value
+    @property
+    def monitorBuffer(self):
+        return self.__monitorBuffer
+
+    def draw_box(self, image, box):
+        x, y = box.x, box.y
+        width, height = box.width, box.height
+        left, right, top, bottom = x, x + width, y, y + height
+
+        confidence = box.confidence
+        classID = box.classID
+        label = box.label
+
+        if not label in self.__colors:
+            color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+            self.__colors[label] = color
+        else:
+            color = self.__colors[label]
+
+        text = "{}: {:.4f}".format(label, confidence)
+
+        cv2.rectangle(image, (left, top), (right, bottom), color, 2)
+        cv2.putText(image, text, (left, top - 5), cv2.FONT_HERSHEY_SIMPLEX,
+                    0.5, color, 1)
+
 
     def detect(self):
         if self.__readBuffer.size == 0:
@@ -118,6 +142,14 @@ class ObjectDetector:
                 detectionBoxes.append(detectionBox)
 
         detection = Detection(detectionBoxes, timestamp)
-        self.__writeBuffer.add(detection)
+
+        resultImage = image.copy()
+        resultFrame = Frame(frame.timestamp, resultImage)
+
+        for box in detectionBoxes:
+            self.draw_box(resultImage, box)
+
+        self.__writeBuffer.push(detection)
+        self.__monitorBuffer.push(resultFrame)
 
         #print("[DetectionThread]: Object detection completed.(timestamp: {}, boxes: {})".format(timestamp, len(detectionBoxes)))

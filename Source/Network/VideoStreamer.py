@@ -102,6 +102,13 @@ class VideoStreamer:
 
         GObject.timeout_add_seconds(3, self.get_message)
 
+    def start(self):
+        self.build_pipeline()
+        self.ready()
+
+        self.__gLoop = GObject.MainLoop()
+        self.__gLoop.run()
+
     def on_need_data(self, src, length):
         if self.__framebuffer.size <= 0:
             data = np.ndarray(shape=(self.__height, self.__width))

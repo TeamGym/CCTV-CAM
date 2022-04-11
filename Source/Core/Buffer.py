@@ -14,14 +14,14 @@ class Buffer:
     def rawbuffer(self, value):
         self.__buffer = value
 
-    def add(self, data):
-        self.__buffer.append(data)
-        
     def clear(self):
         self.__buffer.clear()
 
     def get(self, index):
         return self.__buffer[index]
+
+    def push(self, data):
+        self.__buffer.append(data)
 
     def pop(self, index=-1):
         return self.__buffer.pop(index)
