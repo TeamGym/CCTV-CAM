@@ -47,9 +47,9 @@ class VideoStreamer:
         self.__streamStatus.setTryingConnect()
 
         self.__pipeline = Gst.parse_launch(
-            "appsrc name=m_src caps=video/x-raw,width={},height={},framerate={}/1,format=BGR ! videoconvert !" \
-            "x264enc name=m_encoder ! video/x-h264,width=640,height=480,framerate={}/1,format=I420,stream-format=byte-stream !" \
-            "rtspclientsink name=m_sink" \
+            "appsrc name=m_src caps=video/x-raw,width={},height={},framerate={}/1,format=BGR ! videoconvert !"
+            "x264enc name=m_encoder ! video/x-h264,width=640,height=480,framerate={}/1,format=I420,stream-format=byte-stream !"
+            "rtspclientsink name=m_sink"
             .format(self.__width, self.__height, self.__fps, self.__fps))
         self.__bus = self.__pipeline.get_bus()
 

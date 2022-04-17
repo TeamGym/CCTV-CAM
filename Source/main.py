@@ -3,8 +3,7 @@
 from Core.Buffer import Buffer
 from Core.BufferHolder import BufferHolder
 from Core.BufferBroadcaster import BufferBroadcaster
-
-from Config.JSONConfig import JSONConfig
+from Core.JSON import JSON
 
 from Capture.VideoCapture import VideoCapture
 from Detect.MotionDetector import MotionDetector
@@ -27,7 +26,7 @@ def HandleSignal(signal, frame):
     print("Signal detected.")
     sys.exit(0)
 
-config = JSONConfig()
+config = JSON()
 config.loadFile("Setting/AMD64/default-test.json")
 
 bufferHolder = BufferHolder()

@@ -1,6 +1,6 @@
 import json
 
-class JSONConfig:
+class JSON:
     def __init__(self):
         pass
 
@@ -14,13 +14,13 @@ class JSONConfig:
         for name in self.__dict__:
             value = getattr(self, name)
             if isinstance(value, dict):
-                subConfig = JSONConfig()
-                subConfig.loadDict(value)
-                setattr(self, name, subConfig)
+                subJson = JSON()
+                subJson.loadDict(value)
+                setattr(self, name, subJson)
 
     def loadFile(self, filePath):
-        with open(filePath, "r") as configFile:
-            self.__dict__ = json.load(configFile)
+        with open(filePath, "r") as file:
+            self.__dict__ = json.load(file)
 
             self.__loadRecursively()
 

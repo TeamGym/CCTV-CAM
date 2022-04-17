@@ -11,7 +11,7 @@ class DetectionBox:
         self.__y = y
         self.__width = width
         self.__height = height
-        
+
         self.__left = x
         self.__right = x + width
         self.__top = y

@@ -24,4 +24,3 @@ class Detection:
     @property
     def timestamp(self):
         return self.__timestamp
-    
