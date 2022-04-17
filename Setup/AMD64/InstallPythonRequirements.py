@@ -6,7 +6,7 @@ requirements =[
     "opencv-python",
     "numpyencoder",
     "pyglet",
-    "dill"
+    "dill",
 ]
-print(' '.join(requirements))
+
 os.system("pip3 install {}".format(' '.join(requirements)))

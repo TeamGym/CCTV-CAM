@@ -4,12 +4,13 @@ import cv2
 import numpy as np
 
 from Core.Frame import Frame
-from Core.FrameBuffer import FrameBuffer
+from Core.Buffer import Buffer
 
 class MotionDetector:
-    def __init__(self, context):
-        self.__readBuffer = context.frameBuffer
-        self.__writeBuffer = context.differenceBuffer
+    def __init__(self, config, videoBuffer, outputBuffer, renderBuffer):
+        self.__videoBuffer = videoBuffer
+        self.__outputBuffer = outputBuffer
+        self.__renderBuffer = renderBuffer
 
         self.__referenceFrame = None
 
@@ -19,32 +20,20 @@ class MotionDetector:
 
         self.__frameCount = 0
 
-        self.__fps = 30
-        self.__duration = 1 / 30
+        self.__targetFPS = config.detector.motion.targetFPS
+        self.__targetDuration = 1 / self.__targetFPS
 
-        self.__monitorBuffer = FrameBuffer(width=context.width,
-                                           height=context.height,
-                                           maxlen=500)
-
-    @property
-    def readBuffer(self):
-        return self.__readBuffer
-
-    @property
-    def writeBuffer(self):
-        return self.__writeBuffer
-
-    @property
-    def monitorBuffer(self):
-        return self.__monitorBuffer
+        self.__updateInterval = config.detector.motion.updateInterval
+        self.__RMSThreshold = config.detector.motion.threshold
 
     def detect(self):
-        if self.__readBuffer.size == 0:
+        if self.__videoBuffer.size == 0:
+            time.sleep(self.__targetDuration)
             return
 
         startTime = time.time()
 
-        frame = self.__readBuffer.tail()
+        frame = self.__videoBuffer.tail()
         timestamp = frame.timestamp
         image = frame.data
 
@@ -67,9 +56,8 @@ class MotionDetector:
 
         self.__latestFrameRMSSum += latestRMS
 
-        if self.__latestFrameCount % 60 == 0:
-
-            if self.__latestFrameRMSSum <= 60 * 4.0:
+        if self.__latestFrameCount % self.__updateInterval == 0:
+            if self.__latestFrameRMSSum <= self.__RMSThreshold * self.__updateInterval:
                 self.__referenceFrame = grayFrame
 
             """
@@ -88,7 +76,7 @@ class MotionDetector:
 
             self.__latestFrame = grayFrame
 
-        _, diffThreshold = cv2.threshold(referenceDiff, 10, 255, cv2.THRESH_BINARY)
+        _, diffThreshold = cv2.threshold(referenceDiff, 20, 255, cv2.THRESH_BINARY)
 
         mask = cv2.dilate(diffThreshold, (5, 5), iterations=2)
         mask = cv2.cvtColor(diffThreshold, cv2.COLOR_GRAY2RGB)
@@ -96,13 +84,13 @@ class MotionDetector:
         maskedImage = cv2.bitwise_and(image, mask)
         maskedFrame = Frame(timestamp, maskedImage)
 
-        self.__writeBuffer.push(maskedFrame)
-        self.__monitorBuffer.push(maskedFrame)
+        self.__renderBuffer.push(maskedFrame)
 
         self.__latestFrameCount += 1
         self.__frameCount += 1
 
         endTime = time.time()
-        spendTime = endTime - startTime
+        elapsedTime = endTime - startTime
 
-        time.sleep(max(self.__duration - spendTime, 0))
+        if self.__targetDuration > elapsedTime:
+            time.sleep(self.__targetDuration - elapsedTime)

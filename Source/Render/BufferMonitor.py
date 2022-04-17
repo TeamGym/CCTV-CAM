@@ -1,9 +1,5 @@
-from Core.FrameBuffer import FrameBuffer
-
 class BufferMonitor:
-    def __init__(self,
-                 name: str,
-                 buffer: FrameBuffer):
+    def __init__(self, name, buffer):
         self.__name = name
         self.__buffer = buffer
 
@@ -26,11 +22,3 @@ class BufferMonitor:
     @buffer.setter
     def buffer(self, value):
         self.__buffer = value
-
-    @property
-    def width(self):
-        return self.__buffer.width
-
-    @property
-    def height(self):
-        return self.__buffer.height

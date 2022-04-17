@@ -1,33 +1,33 @@
-import cv2
-import numpy as np
+import time
 import random
 
+import cv2
+import numpy as np
+
 from Core.Frame import Frame
-from Core.FrameBuffer import FrameBuffer
+from Core.Buffer import Buffer
 
 from Detect.DetectionBox import DetectionBox
 from Detect.Detection import Detection
 
 class ObjectDetector:
-    def __init__(self,
-                 labelFileName : str,
-                 configFileName : str,
-                 weightsFileName : str,
-                 confidenceThreshold : int,
-                 context):
-        self.__network = cv2.dnn.readNetFromDarknet(configFileName, weightsFileName)
-        self.__labels = open(labelFileName).read().strip().split("\n")
-        self.__confidenceThreshold = confidenceThreshold
-        self.__layerNames = [self.__network.getLayerNames()[layer - 1] for layer in self.__network.getUnconnectedOutLayers()]
+    def __init__(self, config, videoBuffer, outputBuffer, renderBuffer):
+        self.__network = cv2.dnn.readNetFromDarknet(
+            config.detector.object.config,
+            config.detector.object.weights)
+        self.__labels = open(config.detector.object.label).read().strip().split("\n")
+        self.__confidenceThreshold = config.detector.object.threshold
+        self.__layerNames = [self.__network.getLayerNames()[layer - 1]
+                             for layer in self.__network.getUnconnectedOutLayers()]
+
+        self.__targetFPS = config.detector.object.targetFPS
+
+
         self.__colors = {}
 
-        self.__readBuffer = context.frameBuffer
-        self.__writeBuffer = context.detectionBuffer
-        self.__monitorBuffer = FrameBuffer(width=context.width,
-                                           height=context.height,
-                                           maxlen=500)
-
-
+        self.__videoBuffer = videoBuffer
+        self.__outputBuffer = outputBuffer
+        self.__renderBuffer = renderBuffer
 
     @property
     def network(self):
@@ -44,18 +44,6 @@ class ObjectDetector:
     @confidenceThreshold.setter
     def confidenceThreshold(self, value):
         self.__confidenceThreshold = value
-
-    @property
-    def readBuffer(self):
-        return self.__readBuffer
-
-    @property
-    def writeBuffer(self):
-        return self.__writeBuffer
-
-    @property
-    def monitorBuffer(self):
-        return self.__monitorBuffer
 
     def draw_box(self, image, box):
         x, y = box.x, box.y
@@ -80,10 +68,14 @@ class ObjectDetector:
 
 
     def detect(self):
-        if self.__readBuffer.size == 0:
+        if self.__videoBuffer.size == 0:
+            time.sleep(1 / self.__targetFPS)
             return
 
-        frame = self.__readBuffer.tail()
+        startTime = time.time()
+
+        frame = self.__videoBuffer.tail()
+        self.__videoBuffer.clear()
 
         timestamp = frame.timestamp
         image = frame.data
@@ -149,7 +141,14 @@ class ObjectDetector:
         for box in detectionBoxes:
             self.draw_box(resultImage, box)
 
-        self.__writeBuffer.push(detection)
-        self.__monitorBuffer.push(resultFrame)
+        self.__outputBuffer.push(detection)
+        self.__renderBuffer.push(resultFrame)
 
         #print("[DetectionThread]: Object detection completed.(timestamp: {}, boxes: {})".format(timestamp, len(detectionBoxes)))
+
+        endTime = time.time()
+        elapsedTime = endTime - startTime
+
+        duration = 1 / self.__targetFPS
+        if elapsedTime < duration:
+            time.sleep(duration - elapsedTime)

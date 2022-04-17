@@ -126,12 +126,12 @@ class BufferViewer(BufferRenderer):
     def drawName(self, image, name):
         text = "monitor: {}".format(name)
 
-        cv2.putText(image, text, (0, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (50, 200, 50), 1)
+        cv2.putText(image, text, (0, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (240, 50, 50), 1)
 
     def drawTimestamp(self, image, timestamp):
-        text = "timestamp: {:.2f}s".format(timestamp)
+        text = "timestamp: {:,.2f}ms".format(timestamp)
 
-        cv2.putText(image, text, (0, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (50, 200, 50), 1)
+        cv2.putText(image, text, (0, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (240, 50, 50), 1)
 
     def getMonitorFrames(self):
         if self.mode == "Renderer":

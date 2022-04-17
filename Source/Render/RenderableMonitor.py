@@ -14,14 +14,6 @@ class RenderableMonitor(BufferMonitor):
 # ----------------------------------------------------------------------
 
     @property
-    def originalWidth(self):
-        return self.buffer.width
-
-    @property
-    def originalHeight(self):
-        return self.buffer.height
-
-    @property
     def left(self):
         return self.__left
 

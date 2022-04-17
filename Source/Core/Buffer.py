@@ -1,10 +1,21 @@
+from collections import deque
+
 class Buffer:
-    def __init__(self):
-        self.__buffer = []
+    def __init__(self, maxlen=-1):
+        assert maxlen >= -1
+
+        if maxlen < 0:
+            self.__buffer = deque()
+        else:
+            self.__buffer = deque(maxlen=maxlen)
 
     @property
     def size(self):
         return len(self.__buffer)
+
+    @property
+    def maxlen(self):
+        return self.__buffer.maxlen
 
     @property
     def rawbuffer(self):

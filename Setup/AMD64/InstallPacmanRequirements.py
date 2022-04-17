@@ -13,5 +13,5 @@ requirements =[
     "pugixml",
     "fmt"
 ]
-print(' '.join(requirements))
+
 os.system("sudo pacman -S {}".format(' '.join(requirements)))

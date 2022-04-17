@@ -1,0 +1,38 @@
+{
+    "network": {
+        "tcp": {
+            "host": "211.179.66.138",
+            "port": "50001"
+        },
+
+        "rtsp": {
+            "location": "211.179.66.138:50002/record/0"
+        }
+    },
+
+    "device": {
+        "camera": {
+            "device": "/dev/video2",
+            "width": 640,
+            "height": 480,
+            "fps": 30,
+            "format": "YUY2"
+        }
+    },
+
+    "detector": {
+        "motion": {
+            "updateInterval": 20,
+            "threshold": 5.0,
+            "targetFPS": 10
+        },
+
+        "object": {
+            "label": "darknet/data/coco.names",
+            "config": "darknet/cfg/yolov4-tiny.cfg",
+            "weights": "darknet/weights/yolov4-tiny.weights",
+            "threshold": 0.3,
+            "targetFPS": 5
+        }
+    }
+}

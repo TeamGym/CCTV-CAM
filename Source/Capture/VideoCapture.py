@@ -1,45 +1,34 @@
-import sys
 import cv2
+import time
+import multiprocessing as mp
 
 from Core.Frame import Frame
-from Core.FrameBuffer import FrameBuffer
+from Core.Buffer import Buffer
 
-import gi
+class VideoCapture:
+    __startTime = time.time()
 
-gi.require_version('Gst', '1.0')
-from gi.repository import Gst, GObject
+    def __init__(self, buffer=None):
+        self.__cvCapture = None
 
-class VideoCapture(object):
-    def __init__(self, context):
-        super().__init__()
+        self.__width = 0
+        self.__height = 0
 
-        self.__device = context.device
-        self.__width = context.width
-        self.__height = context.height
-        self.__fps = context.fps
-        self.__format = context.colorFormat
-
-        self.__duration = 1 / self.__fps * Gst.SECOND
+        self.__frameRate = 0
+        self.__frameDuration = 0
         self.__frameCount = 0
 
-        self.ready()
+        if buffer is None:
+            self.__buffer = Buffer(maxlen=1000)
+        else:
+            self.__buffer = buffer
 
-        self.__writeBuffer = context.frameBuffer
-        self.__monitorBuffer = FrameBuffer(self.__width,
-                                           self.__height,
-                                           maxlen=500)
+        self.__isCapturing = False
+        self.__isSimulatingFrameRate = True
 
-    @property
-    def writeBuffer(self):
-        return self.__writeBuffer
-
-    @property
-    def monitorBuffer(self):
-        return self.__monitorBuffer
-
-    @property
-    def device(self):
-        return self.__device
+# ----------------------------------------------------------------------
+# Property
+# ----------------------------------------------------------------------
 
     @property
     def width(self):
@@ -50,37 +39,147 @@ class VideoCapture(object):
         return self.__height
 
     @property
-    def fps(self):
-        return self.__fps
+    def frameCount(self):
+        return self.__frameCount
 
     @property
-    def format(self):
-        return self.__format
+    def frameRate(self):
+        return self.__frameRate
 
-    def ready(self):
-        self.__cvCapture = cv2.VideoCapture(self.__device)
-        self.__cvCapture.set(cv2.CAP_PROP_FRAME_WIDTH, self.__width)
-        self.__cvCapture.set(cv2.CAP_PROP_FRAME_HEIGHT, self.__height)
-        self.__cvCapture.set(cv2.CAP_PROP_FPS, self.__fps)
+    @frameRate.setter
+    def frameRate(self, value):
+        assert(isinstance(value, int))
 
-        if not self.__cvCapture.isOpened():
-            print("[cv2.VideoCvCapture]: can't open")
-            sys.exit()
+        if not self.__isSimulatingFrameRate:
+            return
+
+        self.__frameRate = value
+        self.__frameDuration = 1 / self.__frameRate
+
+    @property
+    def frameDuration(self):
+        return self.__frameDuration
+
+    @property
+    def isCapturing(self):
+        return self.__isCapturing
+
+    @isCapturing.setter
+    def isCapturing(self, value):
+        assert(isinstance(value, bool))
+
+        self.__isCapturing = value
+
+    @property
+    def isSimulatingFrameRate(self):
+        return self.__isSimulatingFrameRate
+
+    @isSimulatingFrameRate.setter
+    def isSimulatingFrameRate(self, value):
+        assert(isinstance(value, bool))
+
+        self.__isSimulatingFrameRate = value
+
+    @property
+    def outputBuffer(self):
+        return self.__buffer
+
+    @outputBuffer.setter
+    def outputBuffer(self, value):
+        self.__buffer = value
+
+    @property
+    def timestamp(self):
+        return time.time() - VideoCapture.__startTime
+
+    @property
+    def timestampMilliseconds(self):
+        return int(self.timestamp * 1e3)
+
+    @property
+    def timestampMicroseconds(self):
+        return int(self.timestamp * 1e6)
+
+    @property
+    def timestampNanoseconds(self):
+        return int(self.timestamp * 1e9)
+
+# ----------------------------------------------------------------------
+# Private Member Method
+# ----------------------------------------------------------------------
+
+    def __waitUntilNextFrame(self, elapsedTime):
+
+        if elapsedTime >= self.frameDuration:
+            return
+
+        time.sleep(self.frameDuration - elapsedTime)
+
+# ----------------------------------------------------------------------
+# Public Member Method
+# ----------------------------------------------------------------------
+
+    def openFile(self, fileName, width, height, frameRate):
+        self.__width = width
+        self.__height = height
+        self.__frameRate = frameRate
+        self.__frameDuration = 1 / self.__frameRate
+
+        self.__cvCapture = cv2.VideoCapture(fileName)
+        self.__cvCapture.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+        self.__cvCapture.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+        self.__cvCapture.set(cv2.CAP_PROP_FPS, frameRate)
+
+        self.__frameCount = 0
+
+        self.isCapturing = True
+
+    def openDevice(self, deviceName, width, height, frameRate):
+        self.openFile(deviceName, width, height, frameRate)
+
+    def openGstreamerPipeline(self, pipelineString, width, height, frameRate):
+        self.__width = width
+        self.__height = height
+        self.__frameRate = frameRate
+        self.__frameDuration = 1 / self.__frameRate
+
+        self.__cvCapture = cv2.VideoCapture(pipelineString, cv2.CAP_GSTREAMER)
+
+        self.__frameCount = 0
+
+        self.isCapturing = True
+
+    def close(self):
+        self.__cvCapture.release()
 
     def read(self):
+        startTime = time.time()
+
+        if not self.isCapturing:
+            self.__waitUntilNextFrame(0)
+
+            return
+
         if not self.__cvCapture.isOpened():
+            self.__waitUntilNextFrame(0)
+
             return
 
         ret, frame = self.__cvCapture.read()
 
         if not ret:
+            self.__waitUntilNextFrame(0)
+
             return
 
-        timestamp = self.__frameCount * self.__duration
+        timestamp = self.timestamp
 
         frame = Frame(timestamp, frame)
 
-        self.writeBuffer.push(frame)
-        self.monitorBuffer.push(frame)
-
+        self.__buffer.push(frame)
         self.__frameCount += 1
+
+        endTime = time.time()
+
+        if self.__isSimulatingFrameRate:
+            self.__waitUntilNextFrame(endTime - startTime)

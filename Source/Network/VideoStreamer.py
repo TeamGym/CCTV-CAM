@@ -1,26 +1,27 @@
 import sys
 import numpy as np
 
-from Core.Buffer import Buffer
-
 import gi
 
 gi.require_version('Gst', '1.0')
 from gi.repository import Gst, GObject
 
+from Network.ServerStatus import ServerStatus
+
 class VideoStreamer:
-    def __init__(self, context):
-        self.__context = context
+    def __init__(self, config, connectionHolder, videoBuffer):
+        self.__width = config.device.camera.width
+        self.__height = config.device.camera.height
+        self.__fps = config.device.camera.fps
 
-        self.__width = context.width
-        self.__height = context.height
-        self.__fps = context.fps
+        self.__location = config.network.rtsp.location
 
-        self.__location = context.rtspLocation
+        self.__tcpStatus = connectionHolder.getConnection("TCP")
+        self.__streamStatus = connectionHolder.getConnection("VideoStream")
 
         self.__duration = 1 / self.__fps * Gst.SECOND
 
-        self.__framebuffer = context.frameBuffer
+        self.__videoBuffer = videoBuffer
         self.__frameCount = 0
 
         GObject.threads_init()
@@ -43,6 +44,8 @@ class VideoStreamer:
         return self.__location
 
     def build_pipeline(self):
+        self.__streamStatus.setTryingConnect()
+
         self.__pipeline = Gst.parse_launch(
             "appsrc name=m_src caps=video/x-raw,width={},height={},framerate={}/1,format=BGR ! videoconvert !" \
             "x264enc name=m_encoder ! video/x-h264,width=640,height=480,framerate={}/1,format=I420,stream-format=byte-stream !" \
@@ -70,25 +73,21 @@ class VideoStreamer:
     def get_message(self):
         message = self.__bus.timed_pop(Gst.SECOND)
 
-
         if message is not None and message.type in [Gst.MessageType.EOS, Gst.MessageType.ERROR]:
             print("[VideoStreamer]: Can't stream video to server.", file=sys.stderr)
 
             self.__pipeline.set_state(Gst.State.NULL)
             self.__pipeline.set_state(Gst.State.PLAYING)
 
-        tcpStatus = self.__context.tcpStatus
-        rtspStatus = self.__context.rtspStatus
-
-        if tcpStatus != "Connected":
-            rtspStatus = "Unconnected"
+        if self.__tcpStatus.isUnconnected():
+            self.__streamStatus.setUnconnected()
             self.__pipeline.set_state(Gst.State.NULL)
 
             print("[VideoStreamer]: Can't stream video to server.", file=sys.stderr)
 
-        if rtspStatus == "Unconnected" and tcpStatus == "Connected":
+        if self.__streamStatus.isUnconnected() and self.__tcpStatus.isConnected():
             self.__pipeline.set_state(Gst.State.PLAYING)
-            self.__rtspStatus = "Connected"
+            self.__streamStatus.setConnected()
 
             print("[VideoStreamer]: re-start streaming.")
 
@@ -110,10 +109,10 @@ class VideoStreamer:
         self.__gLoop.run()
 
     def on_need_data(self, src, length):
-        if self.__framebuffer.size <= 0:
+        if self.__videoBuffer.size <= 0:
             data = np.ndarray(shape=(self.__height, self.__width))
         else:
-            frame = self.__framebuffer.tail()
+            frame = self.__videoBuffer.tail()
             data = frame.data
 
         data = data.tostring()
@@ -132,5 +131,7 @@ class VideoStreamer:
 
         if retval != Gst.FlowReturn.OK:
             print(retval)
+        else:
+            self.__streamStatus.setConnected()
 
         self.__frameCount += 1

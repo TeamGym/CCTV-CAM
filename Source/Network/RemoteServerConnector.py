@@ -5,26 +5,30 @@ import json
 
 from numpyencoder import NumpyEncoder
 
-from Core.Buffer import Buffer
 from Detect.DetectionBox import DetectionBox
 from Detect.Detection import Detection
 
 class RemoteServerConnector:
-    def __init__(self, context):
+    def __init__(self, config, connectionHolder,
+                 objectBuffer, motionBuffer, commandQueue):
+        self.__host = config.network.tcp.host
+        self.__port = config.network.tcp.port
 
-        self.__context = context
+        self.__videoWidth = config.device.camera.width
+        self.__videoHeight = config.device.camera.height
 
-        self.__host = context.tcpHost
-        self.__port = context.tcpPort
-
-        self.__videoWidth = context.width
-        self.__videoHeight = context.height
-
-        self.__detectionBuffer = context.detectionBuffer
-        self.__commandQueue = context.commandQueue
+        self.__objectBuffer = objectBuffer
+        self.__motionBuffer = motionBuffer
+        self.__commandQueue = commandQueue
 
         self.__socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.__socket.settimeout(10)
+
+        self.__serverStatus = connectionHolder.getConnection("TCP")
+
+        self.__minTimeout = 1
+        self.__maxTimeout = 10
+        self.__currentTimeout = 1
 
         self.__latestTimestamp = 0
 
@@ -42,16 +46,25 @@ class RemoteServerConnector:
 
     def connect(self):
         while True:
-            self.__context.tcpStatus = "Connecting"
+            self.__serverStatus.setTryingConnect()
             try:
                 if self.__socket.connect_ex((self.__host, self.__port)):
-                    print("[RemoteServerConnector]: Can't connect TCP server, wait 3 second.")
-                    time.sleep(3)
+                    print("[RemoteServerConnector]: Can't connect TCP server, wait {} second."
+                          .format(self.__currentTimeout))
+                    time.sleep(self.__currentTimeout)
+
+                    self.__currentTimeout = min(self.__currentTimeout + 1, self.__maxTimeout)
                 else:
                     break
             except:
-                print("[RemoteServerConnector]: Can't connect TCP server, wait 3 second.")
-                time.sleep(3)
+                print("[RemoteServerConnector]: Can't connect TCP server, wait {} seconds."
+                      .format(self.__currentTimeout))
+                time.sleep(self.__currentTimeout)
+
+                self.__currentTimeout = min(self.__currentTimeout + 1, self.__maxTimeout)
+
+        self.__serverStatus.setConnected()
+        self.__currentTimeout = self.__minTimeout
 
         print("[RemoteServerConnector]: Connected successfully.")
 
@@ -69,14 +82,14 @@ class RemoteServerConnector:
 
         self.__socket.sendall(cctvInfo)
 
-        self.__context.tcpStatus = "Connected"
+        self.__serverStatus.setConnected()
 
         while True:
-            if self.__detectionBuffer.size <= 0:
-                time.sleep(0.1)
+            if self.__objectBuffer.size <= 0:
+                time.sleep(1 / 30.0)
                 continue
 
-            detection = self.__detectionBuffer.tail()
+            detection = self.__objectBuffer.tail()
             timestamp = detection.timestamp
 
             if timestamp <= self.__latestTimestamp:
@@ -99,7 +112,7 @@ class RemoteServerConnector:
             self.__socket.send(data)
 
     def communicate_automatically(self):
-        self.__context.tcpStatus = "Unconnected"
+        self.__serverStatus.setUnconnected()
         self.connect()
 
         while True:
@@ -108,5 +121,5 @@ class RemoteServerConnector:
             except OSError as e:
                 print("[RemoteServerConnector]: Unexpected error. Attempt to re-connect.(Error: {})".format(e), file=sys.stderr)
 
-                self.__context.tcpStatus = "Unconnected"
+                self.__serverStatus.setUnconnectd()
                 self.connect()
