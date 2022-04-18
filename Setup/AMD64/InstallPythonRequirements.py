@@ -7,6 +7,7 @@ requirements =[
     "numpyencoder",
     "pyglet",
     "dill",
+    "pyttsx3"
 ]
 
 os.system("pip3 install {}".format(' '.join(requirements)))
