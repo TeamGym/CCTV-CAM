@@ -20,9 +20,6 @@ class ObjectDetector:
         self.__layerNames = [self.__network.getLayerNames()[layer - 1]
                              for layer in self.__network.getUnconnectedOutLayers()]
 
-        self.__targetFPS = config.detector.object.targetFPS
-
-
         self.__colors = {}
 
         self.__videoBuffer = videoBuffer
@@ -66,10 +63,8 @@ class ObjectDetector:
         cv2.putText(image, text, (left, top - 5), cv2.FONT_HERSHEY_SIMPLEX,
                     0.5, color, 1)
 
-
     def detect(self):
         if self.__videoBuffer.size == 0:
-            time.sleep(1 / self.__targetFPS)
             return
 
         startTime = time.time()
@@ -143,12 +138,3 @@ class ObjectDetector:
 
         self.__outputBuffer.push(detection)
         self.__renderBuffer.push(resultFrame)
-
-        #print("[DetectionThread]: Object detection completed.(timestamp: {}, boxes: {})".format(timestamp, len(detectionBoxes)))
-
-        endTime = time.time()
-        elapsedTime = endTime - startTime
-
-        duration = 1 / self.__targetFPS
-        if elapsedTime < duration:
-            time.sleep(duration - elapsedTime)
