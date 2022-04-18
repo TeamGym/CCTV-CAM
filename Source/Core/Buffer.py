@@ -34,8 +34,8 @@ class Buffer:
     def push(self, data):
         self.__buffer.append(data)
 
-    def pop(self, index=-1):
-        return self.__buffer.pop(index)
+    def pop(self):
+        return self.__buffer.pop()
 
     def insert(self, index, data):
         self.__buffer.insert(index, data)
