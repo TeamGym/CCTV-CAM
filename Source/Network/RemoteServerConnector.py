@@ -8,9 +8,13 @@ from numpyencoder import NumpyEncoder
 from Detect.DetectionBox import DetectionBox
 from Detect.Detection import Detection
 
-class RemoteServerConnector:
+from Thread.ThreadRunner import ThreadRunner
+
+class RemoteServerConnector(ThreadRunner):
     def __init__(self, config, connectionHolder,
                  objectBuffer, motionBuffer, commandQueue):
+        super().__init__(func=self.communicate_automatically)
+
         self.__host = config.network.tcp.host
         self.__port = config.network.tcp.port
 

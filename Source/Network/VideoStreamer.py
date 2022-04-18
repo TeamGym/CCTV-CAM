@@ -8,8 +8,12 @@ from gi.repository import Gst, GObject
 
 from Network.ServerStatus import ServerStatus
 
-class VideoStreamer:
+from Thread.ThreadRunner import ThreadRunner
+
+class VideoStreamer(ThreadRunner):
     def __init__(self, config, connectionHolder, videoBuffer):
+        super().__init__(func=self.startPipeline)
+
         self.__width = config.device.camera.width
         self.__height = config.device.camera.height
         self.__fps = config.device.camera.fps
@@ -101,7 +105,7 @@ class VideoStreamer:
 
         GObject.timeout_add_seconds(3, self.get_message)
 
-    def start(self):
+    def startPipeline(self):
         self.build_pipeline()
         self.ready()
 
