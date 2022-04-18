@@ -4,7 +4,6 @@
             "host": "211.179.66.138",
             "port": "50001"
         },
-
         "rtsp": {
             "location": "211.179.66.138:50002/record/0"
         }
@@ -12,7 +11,7 @@
 
     "device": {
         "camera": {
-            "device": "/dev/video4",
+            "device": "/dev/video2",
             "width": 640,
             "height": 480,
             "fps": 30,
@@ -23,16 +22,32 @@
     "detector": {
         "motion": {
             "updateInterval": 20,
-            "threshold": 5.0,
+            "updateThreshold": 4.0,
+            "motionThreshold": 8.0,
             "targetFPS": 10
         },
-
         "object": {
             "label": "darknet/data/yolo-gun.names",
             "config": "darknet/cfg/yolov3-gun.cfg",
             "weights": "darknet/weights/yolov3-gun.weights",
             "threshold": 0.3,
             "targetFPS": 5
+        }
+    },
+
+    "audio": {
+        "volume": 0.3,
+        "engine": {
+            "volume": 0.3
+        },
+        "alert": {
+            "motion": {
+                "minInterval": 0.3
+            },
+            "object": {
+                "minInterval": 0.3,
+                "targets": ["gun", "person"]
+            }
         }
     }
 }
