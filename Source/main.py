@@ -6,8 +6,15 @@ from Core.BufferBroadcaster import BufferBroadcaster
 from Core.JSON import JSON
 
 from Capture.VideoCapture import VideoCapture
+
+from Audio.AudioDeviceController import AudioDeviceController
+from Audio.TTSEngine import TTSEngine
+from Audio.MotionAlerter import MotionAlerter
+from Audio.ObjectAlerter import ObjectAlerter
+
 from Detect.MotionDetector import MotionDetector
 from Detect.ObjectDetector import ObjectDetector
+
 from Network.VideoStreamer import VideoStreamer
 from Network.RemoteServerConnector import RemoteServerConnector
 from Network.ConnectionHolder import ConnectionHolder
@@ -39,9 +46,19 @@ bufferHolder.connectBuffers(
                 "Motion": Buffer(maxlen=500),
                 "Render": Buffer(maxlen=100)
             }),
-        "ObjectOut": Buffer(maxlen=500),
+        "ObjectOut": BufferBroadcaster(
+            sockets={
+                "Send": Buffer(),
+                "Alert": Buffer()
+            }
+        ),
         "ObjectRender": Buffer(maxlen=100),
-        "MotionOut": Buffer(maxlen=500),
+        "MotionOut": BufferBroadcaster(
+            sockets={
+                "Send": Buffer(),
+                "Alert": Buffer()
+            }
+        ),
         "MotionRender": Buffer(maxlen=100),
         "Command": Buffer()
     })
@@ -56,17 +73,6 @@ videoCapture.openDevice(
     config.device.camera.height,
     config.device.camera.fps)
 
-videoStreamer =  VideoStreamer(
-    config=config,
-    connectionHolder=connectionHolder,
-    videoBuffer=bufferHolder.getBuffer("Video").getBuffer("Stream"))
-remoteServerConnector = RemoteServerConnector(
-    config=config,
-    connectionHolder=connectionHolder,
-    objectBuffer=bufferHolder.getBuffer("ObjectOut"),
-    motionBuffer=bufferHolder.getBuffer("MotionOut"),
-    commandQueue=bufferHolder.getBuffer("Command"))
-
 motionDetector = MotionDetector(
     config=config,
     videoBuffer=bufferHolder.getBuffer("Video").getBuffer("Motion"),
@@ -77,12 +83,6 @@ objectDetector = ObjectDetector(
     videoBuffer=bufferHolder.getBuffer("Video").getBuffer("Object"),
     outputBuffer=bufferHolder.getBuffer("ObjectOut"),
     renderBuffer=bufferHolder.getBuffer("ObjectRender"))
-
-videoCaptureThread = ThreadLoopRunner(videoCapture.read)
-videoStreamerThread = ThreadRunner(videoStreamer.start)
-motionDetectorThread = ThreadLoopRunner(motionDetector.detect)
-objectDetectorThread = ThreadLoopRunner(objectDetector.detect)
-connectorThread = ThreadRunner(remoteServerConnector.communicate_automatically)
 
 monitors = [
     RenderableMonitor(name="Original",
@@ -105,14 +105,42 @@ monitors = [
                       height=config.device.camera.height)
 ]
 
+ttsEngine = TTSEngine()
+ttsEngine.start()
+
 renderer = BufferViewer(30, monitors=monitors)
 
-videoCaptureThread.start()
-videoStreamerThread.start()
-motionDetectorThread.start()
-objectDetectorThread.start()
-connectorThread.start()
+threads = [
+    ThreadLoopRunner(
+        func=videoCapture.read),
+    ThreadLoopRunner(
+        func=motionDetector.detect,
+        minInterval=1/config.detector.motion.targetFPS),
+    ThreadLoopRunner(
+        func=objectDetector.detect,
+        minInterval=1/config.detector.object.targetFPS),
+    VideoStreamer(
+        config=config,
+        connectionHolder=connectionHolder,
+        videoBuffer=bufferHolder.getBuffer("Video").getBuffer("Stream")),
+    RemoteServerConnector(
+        config=config,
+        connectionHolder=connectionHolder,
+        objectBuffer=bufferHolder.getBuffer("ObjectOut").getBuffer("Send"),
+        motionBuffer=bufferHolder.getBuffer("MotionOut").getBuffer("Send"),
+        commandQueue=bufferHolder.getBuffer("Command")),
+    MotionAlerter(
+        config=config,
+        detectionBuffer=bufferHolder.getBuffer("MotionOut").getBuffer("Alert"),
+        engine=ttsEngine),
+    ObjectAlerter(
+        config=config,
+        detectionBuffer=bufferHolder.getBuffer("ObjectOut").getBuffer("Alert"),
+        engine=ttsEngine)
+]
+
+for thread in threads:
+    thread.start()
 
 pyglet.app.run()
-
 signal.signal(signal.SIGINT, HandleSignal)
