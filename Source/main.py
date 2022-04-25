@@ -6,11 +6,12 @@ from Video import VideoCapture
 from Audio import AudioDeviceController, TTSEngine, MotionAlerter, ObjectAlerter
 from Detect import MotionDetector, ObjectDetector
 from Network import ConnectionHolder, VideoStreamer, RemoteServerConnector
-
+from Log import MotionLogger, ObjectLogger
 from Render import RenderableMonitor, BufferViewer
 
 import signal
 import sys
+import time
 import pyglet
 
 def HandleSignal(signal, frame):
@@ -33,14 +34,16 @@ bufferHolder.connectBuffers(
         "ObjectOut": BufferBroadcaster(
             sockets={
                 "Send": Buffer(),
-                "Alert": Buffer()
+                "Alert": Buffer(),
+                "Log": Buffer()
             }
         ),
         "ObjectRender": Buffer(maxlen=100),
         "MotionOut": BufferBroadcaster(
             sockets={
                 "Send": Buffer(),
-                "Alert": Buffer()
+                "Alert": Buffer(),
+                "Log": Buffer()
             }
         ),
         "MotionRender": Buffer(maxlen=100),
@@ -120,7 +123,15 @@ threads = [
     ObjectAlerter(
         config=config,
         detectionBuffer=bufferHolder.getBuffer("ObjectOut").getBuffer("Alert"),
-        engine=ttsEngine)
+        engine=ttsEngine),
+    MotionLogger(
+        filePath=time.strftime('../Log/Motion%Y-%m-%d%X', time.localtime()),
+        detectionBuffer=bufferHolder.getBuffer("MotionOut").getBuffer("Log")
+    ),
+    ObjectLogger(
+        filePath=time.strftime('../Log/Object%Y-%m-%d%X', time.localtime()),
+        detectionBuffer=bufferHolder.getBuffer("ObjectOut").getBuffer("Log")
+    )
 ]
 
 for thread in threads:
