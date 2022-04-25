@@ -1,29 +1,13 @@
 #!/usr/bin/python3
 
-from Core.Buffer import Buffer
-from Core.BufferHolder import BufferHolder
-from Core.BufferBroadcaster import BufferBroadcaster
-from Core.JSON import JSON
+from Core import Buffer, BufferHolder, BufferBroadcaster, JSON
+from Thread import ThreadRunner, ThreadLoopRunner
+from Video import VideoCapture
+from Audio import AudioDeviceController, TTSEngine, MotionAlerter, ObjectAlerter
+from Detect import MotionDetector, ObjectDetector
+from Network import ConnectionHolder, VideoStreamer, RemoteServerConnector
 
-from Capture.VideoCapture import VideoCapture
-
-from Audio.AudioDeviceController import AudioDeviceController
-from Audio.TTSEngine import TTSEngine
-from Audio.MotionAlerter import MotionAlerter
-from Audio.ObjectAlerter import ObjectAlerter
-
-from Detect.MotionDetector import MotionDetector
-from Detect.ObjectDetector import ObjectDetector
-
-from Network.VideoStreamer import VideoStreamer
-from Network.RemoteServerConnector import RemoteServerConnector
-from Network.ConnectionHolder import ConnectionHolder
-
-from Thread.ThreadRunner import ThreadRunner
-from Thread.ThreadLoopRunner import ThreadLoopRunner
-
-from Render.RenderableMonitor import RenderableMonitor
-from Render.BufferViewer import BufferViewer
+from Render import RenderableMonitor, BufferViewer
 
 import signal
 import sys
