@@ -42,10 +42,12 @@
         },
         "alert": {
             "motion": {
-                "minInterval": 0.3
+                "minInterval": 0.3,
+                "cooldown": 5
             },
             "object": {
                 "minInterval": 0.3,
+                "cooldown": 5,
                 "targets": ["gun", "person"]
             }
         }
