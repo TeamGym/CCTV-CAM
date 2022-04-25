@@ -20,3 +20,9 @@ class TTSEngine(ThreadLoopRunner):
         message = self.__messageQueue.get()
         self.__engine.say(message)
         self.__engine.runAndWait()
+
+    def getProperty(self, name):
+        return self.__engine.getProperty(name)
+
+    def setProperty(self, name, value):
+        self.__engine.setProperty(name, value)
