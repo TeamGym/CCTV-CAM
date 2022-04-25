@@ -9,8 +9,20 @@ class MotionAlerter(ThreadLoopRunner):
         self.__engine = engine
         self.__detectionBuffer = detectionBuffer
 
+        self.__cooldown = config.audio.alert.motion.cooldown
+
+        self.__currentCooldown = 0
+        self.__lastTime = time.time()
+
     def alert(self):
+        currentTime = time.time()
+        self.__currentCooldown -= currentTime - self.__lastTime
+
         while self.__detectionBuffer.size:
             detection = self.__detectionBuffer.pop()
 
-            self.__engine.putMessage("Motion Detected.")
+            if self.__currentCooldown <= 0:
+                self.__engine.putMessage("Motion Detected.")
+                self.__currentCooldown = self.__cooldown
+
+        self.__lastTime = currentTime
