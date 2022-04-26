@@ -11,7 +11,7 @@
 
     "device": {
         "camera": {
-            "device": "/dev/video2",
+            "device": "/dev/video4",
             "width": 640,
             "height": 480,
             "fps": 30,
@@ -21,7 +21,7 @@
 
     "detector": {
         "motion": {
-            "updateInterval": 20,
+            "updateInterval": 15,
             "updateThreshold": 4.0,
             "motionThreshold": 8.0,
             "targetFPS": 10
@@ -35,6 +35,17 @@
         }
     },
 
+    "video": {
+        "clip": {
+            "fourcc": "MPEG",
+            "extension": "avi",
+            "width": 640,
+            "height": 480,
+            "fps": 30,
+            "length": 30
+        }
+    },
+
     "audio": {
         "volume": 0.3,
         "engine": {
@@ -42,10 +53,12 @@
         },
         "alert": {
             "motion": {
-                "minInterval": 0.3
+                "interval": 0.3,
+                "cooldown": 5
             },
             "object": {
-                "minInterval": 0.3,
+                "interval": 0.3,
+                "cooldown": 5,
                 "targets": ["gun", "person"]
             }
         }
