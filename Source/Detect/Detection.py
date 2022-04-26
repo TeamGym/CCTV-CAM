@@ -4,9 +4,7 @@ from Core import Frame
 from Detect import DetectionBox
 
 class Detection:
-    def __init__(self,
-                 boxes : List[DetectionBox],
-                 timestamp : int):
+    def __init__(self, boxes, timestamp):
         self.__boxes = boxes
         self.__timestamp = timestamp
 

@@ -10,9 +10,7 @@ import ctypes
 from . import Window, RenderableMonitor
 
 class BufferRenderer(Window):
-    def __init__(self,
-                 fps: int,
-                 monitors: List[RenderableMonitor]) -> None:
+    def __init__(self, fps, monitors):
         windowWidth = 0
         windowHeight = 0
 
@@ -50,7 +48,7 @@ class BufferRenderer(Window):
 # Public Member Method
 # ----------------------------------------------------------------------
 
-    def closeOnKey(self, key) -> None:
+    def closeOnKey(self, key):
         if key == pyglet_key.Q:
             self.close()
 
