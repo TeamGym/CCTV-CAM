@@ -10,14 +10,12 @@ from Thread import ThreadLoopRunner
 
 class ObjectDetector(ThreadLoopRunner):
     def __init__(self, config, weights, label, threshold, targetFPS,
+                 videoBuffer, outputBuffer, renderBuffer):
+        super().__init__(self.detect, 1 / targetFPS)
 
-class ObjectDetector:
-    def __init__(self, config, videoBuffer, outputBuffer, renderBuffer):
-        self.__network = cv2.dnn.readNetFromDarknet(
-            config.detector.object.config,
-            config.detector.object.weights)
-        self.__labels = open(config.detector.object.label).read().strip().split("\n")
-        self.__confidenceThreshold = config.detector.object.threshold
+        self.__network = cv2.dnn.readNetFromDarknet(config, weights)
+        self.__labels = open(label).read().strip().split("\n")
+        self.__confidenceThreshold = threshold
         self.__layerNames = [self.__network.getLayerNames()[layer - 1]
                              for layer in self.__network.getUnconnectedOutLayers()]
 

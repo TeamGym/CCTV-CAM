@@ -11,15 +11,15 @@ from Detect.Detection import Detection
 from Thread.ThreadRunner import ThreadRunner
 
 class RemoteServerConnector(ThreadRunner):
-    def __init__(self, config, connectionHolder,
+    def __init__(self, host, port, videoWidth, videoHeight, connectionHolder,
                  objectBuffer, motionBuffer, commandQueue):
         super().__init__(func=self.communicate_automatically)
 
-        self.__host = config.network.tcp.host
-        self.__port = config.network.tcp.port
+        self.__host = host
+        self.__port = port
 
-        self.__videoWidth = config.device.camera.width
-        self.__videoHeight = config.device.camera.height
+        self.__videoWidth = videoWidth
+        self.__videoHeight = videoHeight
 
         self.__objectBuffer = objectBuffer
         self.__motionBuffer = motionBuffer

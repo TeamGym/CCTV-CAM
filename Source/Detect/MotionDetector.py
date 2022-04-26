@@ -7,10 +7,11 @@ from Core import Frame
 from Detect import Motion
 from Thread import ThreadLoopRunner
 
-from Detect.Motion import Motion
+class MotionDetector(ThreadLoopRunner):
+    def __init__(self, updateInterval, updateThreshold, motionThreshold, targetFPS,
+                 videoBuffer, outputBuffer, renderBuffer):
+        super().__init__(self.detect, 1 / targetFPS)
 
-class MotionDetector:
-    def __init__(self, config, videoBuffer, outputBuffer, renderBuffer):
         self.__videoBuffer = videoBuffer
         self.__outputBuffer = outputBuffer
         self.__renderBuffer = renderBuffer
@@ -23,12 +24,12 @@ class MotionDetector:
 
         self.__frameCount = 0
 
-        self.__targetFPS = config.detector.motion.targetFPS
+        self.__targetFPS = targetFPS
         self.__targetDuration = 1 / self.__targetFPS
 
-        self.__updateInterval = config.detector.motion.updateInterval
-        self.__updateThresholdPerFrame = config.detector.motion.updateThreshold
-        self.__motionThresholdPerFrame = config.detector.motion.motionThreshold
+        self.__updateInterval = updateInterval
+        self.__updateThresholdPerFrame = updateThreshold
+        self.__motionThresholdPerFrame = motionThreshold
         self.__updateThreshold = self.__updateThresholdPerFrame * self.__updateInterval
         self.__motionThreshold = self.__motionThresholdPerFrame * self.__updateInterval
 

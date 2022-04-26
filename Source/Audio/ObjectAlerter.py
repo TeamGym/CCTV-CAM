@@ -3,14 +3,14 @@ import time
 from Thread import ThreadLoopRunner
 
 class ObjectAlerter(ThreadLoopRunner):
-    def __init__(self, config, detectionBuffer, engine):
-        super().__init__(self.alert, config.audio.alert.object.minInterval)
+    def __init__(self, interval, targets, cooldown, detectionBuffer, engine):
+        super().__init__(self.alert, interval)
 
         self.__engine = engine
         self.__detectionBuffer = detectionBuffer
 
-        self.__cooldown = config.audio.alert.object.cooldown
-        self.__targets = config.audio.alert.object.targets
+        self.__targets = targets
+        self.__cooldown = cooldown
 
         self.__currentCooldown = 0
         self.__lastTime = time.time()

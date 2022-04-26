@@ -10,14 +10,14 @@ from Network import ServerStatus
 from Thread import ThreadRunner
 
 class VideoStreamer(ThreadRunner):
-    def __init__(self, config, connectionHolder, videoBuffer):
+    def __init__(self, width, height, fps, location, connectionHolder, videoBuffer):
         super().__init__(func=self.startPipeline)
 
-        self.__width = config.device.camera.width
-        self.__height = config.device.camera.height
-        self.__fps = config.device.camera.fps
+        self.__width = width
+        self.__height = height
+        self.__fps = fps
 
-        self.__location = config.network.rtsp.location
+        self.__location = location
 
         self.__tcpStatus = connectionHolder.getConnection("TCP")
         self.__streamStatus = connectionHolder.getConnection("VideoStream")
