@@ -12,7 +12,7 @@ class TTSEngine(ThreadLoopRunner):
         self.__messageQueue = Queue()
 
     def putMessage(self, message):
-        self.__messageQueue.put(message)
+        self.__messageQueue.put_nowait(message)
 
     def speakMessage(self):
         startTime = time.time()
