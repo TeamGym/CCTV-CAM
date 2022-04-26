@@ -1,7 +1,7 @@
 import time
 import pyttsx3
 
-from Thread.ThreadLoopRunner import ThreadLoopRunner
+from Thread import ThreadLoopRunner
 from queue import Queue
 
 class TTSEngine(ThreadLoopRunner):

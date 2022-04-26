@@ -1,6 +1,6 @@
 import time
 
-from Thread.ThreadLoopRunner import ThreadLoopRunner
+from Thread import ThreadLoopRunner
 
 class ObjectAlerter(ThreadLoopRunner):
     def __init__(self, config, detectionBuffer, engine):

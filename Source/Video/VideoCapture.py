@@ -1,9 +1,7 @@
 import cv2
 import time
-import multiprocessing as mp
 
-from Core.Frame import Frame
-from Core.Buffer import Buffer
+from Core import Frame, Buffer
 
 class VideoCapture:
     __startTime = time.time()

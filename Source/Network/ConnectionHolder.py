@@ -1,4 +1,4 @@
-from Network.ServerStatus import ServerStatus
+from Network import ServerStatus
 
 class ConnectionHolder:
     def __init__(self):

@@ -8,8 +8,7 @@ from pyglet.gl import *
 from pyglet.window import key as pyglet_key
 import ctypes
 
-from Render.RenderableMonitor import RenderableMonitor
-from Render.BufferRenderer import BufferRenderer
+from . import RenderableMonitor, BufferRenderer
 
 class BufferViewer(BufferRenderer):
     def __init__(self,

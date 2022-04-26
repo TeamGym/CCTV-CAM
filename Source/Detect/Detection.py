@@ -1,8 +1,7 @@
 from typing import List
 
-from Core.Frame import Frame
-
-from Detect.DetectionBox import DetectionBox
+from Core import Frame
+from Detect import DetectionBox
 
 class Detection:
     def __init__(self,

@@ -7,8 +7,7 @@ from pyglet.gl import *
 from pyglet.window import key as pyglet_key
 import ctypes
 
-from Render.Window import Window
-from Render.RenderableMonitor import RenderableMonitor
+from . import Window, RenderableMonitor
 
 class BufferRenderer(Window):
     def __init__(self,

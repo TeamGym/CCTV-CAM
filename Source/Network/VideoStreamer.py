@@ -6,9 +6,8 @@ import gi
 gi.require_version('Gst', '1.0')
 from gi.repository import Gst, GObject
 
-from Network.ServerStatus import ServerStatus
-
-from Thread.ThreadRunner import ThreadRunner
+from Network import ServerStatus
+from Thread import ThreadRunner
 
 class VideoStreamer(ThreadRunner):
     def __init__(self, config, connectionHolder, videoBuffer):

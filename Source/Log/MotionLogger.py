@@ -1,7 +1,7 @@
 import time
 import logging
 
-from Thread.ThreadLoopRunner import ThreadLoopRunner
+from Thread import ThreadLoopRunner
 
 class MotionLogger(ThreadLoopRunner):
     def __init__(self, filePath, detectionBuffer):

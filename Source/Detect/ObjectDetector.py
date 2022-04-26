@@ -4,11 +4,12 @@ import random
 import cv2
 import numpy as np
 
-from Core.Frame import Frame
-from Core.Buffer import Buffer
+from Core import Frame
+from Detect import DetectionBox, Detection
+from Thread import ThreadLoopRunner
 
-from Detect.DetectionBox import DetectionBox
-from Detect.Detection import Detection
+class ObjectDetector(ThreadLoopRunner):
+    def __init__(self, config, weights, label, threshold, targetFPS,
 
 class ObjectDetector:
     def __init__(self, config, videoBuffer, outputBuffer, renderBuffer):
