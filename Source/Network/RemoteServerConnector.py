@@ -2,16 +2,13 @@ import time
 import sys
 import socket
 import json
+import random
 
-from numpyencoder import NumpyEncoder
-
-from Detect.DetectionBox import DetectionBox
-from Detect.Detection import Detection
-
-from Thread.ThreadRunner import ThreadRunner
+from Thread import ThreadRunner
+from Network.RSP import RspConnection, Request, Response, EndpointType
 
 class RemoteServerConnector(ThreadRunner):
-    def __init__(self, host, port, videoWidth, videoHeight, connectionHolder,
+    def __init__(self, host, port, videoWidth, videoHeight, cameraId, connectionHolder,
                  objectBuffer, motionBuffer, commandQueue):
         super().__init__(func=self.communicate_automatically)
 
@@ -30,11 +27,14 @@ class RemoteServerConnector(ThreadRunner):
 
         self.__serverStatus = connectionHolder.getConnection("TCP")
 
-        self.__minTimeout = 1
-        self.__maxTimeout = 10
-        self.__currentTimeout = 1
+        self.__minCooldown = 1
+        self.__maxCooldown = 10
+        self.__currentCooldown = 1
 
         self.__latestTimestamp = 0
+
+        self.__rspConnection = None
+        self.__resetSequenceNumber()
 
     @property
     def host(self):
@@ -48,45 +48,70 @@ class RemoteServerConnector(ThreadRunner):
     def socket(self):
         return self.__socket
 
+    def __resetSequenceNumber(self):
+        self.__sequenceNumber = random.randint(0, 2147483647)
+
+    def __send(self, data):
+        self.__socket.sendall(data)
+
+    def __waitUntilCooldown(self):
+        time.sleep(self.__currentCooldown)
+
+    def __resetCooldown(self):
+        self.__currentCooldown = self.__minCooldown
+
+    def __increaseCooldown(self):
+        self.__currentCooldown = min(self.__currentCooldown + 1, self.__maxCooldown)
+
+    def __sendObject(self, detection):
+        stream = "S{} 1\n".format(self.__port)
+
+        stream += "{}\n".format(int(detection.timestamp))
+
+        for box in detection.boxes:
+            stream += "{},{},{},{},{},{},{}\n".format(
+                box.x,
+                box.x + box.width,
+                box.y,
+                box.y + box.height,
+                box.confidence,
+                box.classID,
+                box.label)
+
+        self.__rspConnection.sendStream(stream)
+
     def connect(self):
         while True:
             self.__serverStatus.setTryingConnect()
             try:
                 if self.__socket.connect_ex((self.__host, self.__port)):
                     print("[RemoteServerConnector]: Can't connect TCP server, wait {} second."
-                          .format(self.__currentTimeout))
-                    time.sleep(self.__currentTimeout)
+                          .format(self.__currentCooldown))
 
-                    self.__currentTimeout = min(self.__currentTimeout + 1, self.__maxTimeout)
+                    self.__waitUntilCooldown()
+                    self.__increaseCooldown()
                 else:
                     break
-            except:
+            except Exception as e:
                 print("[RemoteServerConnector]: Can't connect TCP server, wait {} seconds."
-                      .format(self.__currentTimeout))
-                time.sleep(self.__currentTimeout)
-
-                self.__currentTimeout = min(self.__currentTimeout + 1, self.__maxTimeout)
+                      .format(self.__currentCooldown))
+                self.__waitUntilCooldown()
+                self.__increaseCooldown()
 
         self.__serverStatus.setConnected()
-        self.__currentTimeout = self.__minTimeout
+        self.__resetCooldown()
 
         print("[RemoteServerConnector]: Connected successfully.")
 
+        self.__rspConnection = RspConnection(
+            endpointType=EndpointType.CAM,
+            sock=self.__socket)
+
+        self.__rspConnection.addEventHandler('Disconnected', self.__connect)
+        self.__rspConnection.start()
+
     def communicate(self):
-        cctvInfo = {
-            "cam_id": 0,
-            "mode": 1,
-            "video_width": self.__videoWidth,
-            "video_height": self.__videoHeight
-        }
-        cctvInfo = json.dumps(cctvInfo)
-        cctvInfo = cctvInfo.encode('utf-8')
-
-        print("[RemoteServerConnector]:  Attempt to send CCTV info.")
-
-        self.__socket.sendall(cctvInfo)
-
-        self.__serverStatus.setConnected()
+        print("[RemoteServerConnector]: Attempt to send CCTV info.")
 
         while True:
             if self.__objectBuffer.size <= 0:
@@ -100,20 +125,9 @@ class RemoteServerConnector(ThreadRunner):
                 time.sleep(0.1)
                 continue
 
+            self.__sendObject(detection)
+
             self.__latestTimestamp = timestamp
-
-            #print("[RemoteServerConnector]: Attempt to send detection data.(boxes: {})"
-            #      .format(len(detection.boxes)))
-
-            data = {
-                "timestamp": detection.timestamp / 1e6,
-                "boxes": [box.as_dict() for box in detection.boxes]
-            }
-            data = json.dumps(data, cls=NumpyEncoder)
-            data = data.replace(" ", "")
-            data = data.encode('utf-8')
-
-            self.__socket.send(data)
 
     def communicate_automatically(self):
         self.__serverStatus.setUnconnected()
@@ -125,5 +139,5 @@ class RemoteServerConnector(ThreadRunner):
             except OSError as e:
                 print("[RemoteServerConnector]: Unexpected error. Attempt to re-connect.(Error: {})".format(e), file=sys.stderr)
 
-                self.__serverStatus.setUnconnectd()
+                self.__serverStatus.setUnconnected()
                 self.connect()
