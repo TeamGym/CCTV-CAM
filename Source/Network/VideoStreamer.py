@@ -1,3 +1,4 @@
+import time
 import sys
 import numpy as np
 
@@ -10,14 +11,15 @@ from Network import ServerStatus
 from Thread import ThreadRunner
 
 class VideoStreamer(ThreadRunner):
-    def __init__(self, width, height, fps, location, connectionHolder, videoBuffer):
+    def __init__(self, width, height, fps, host, port, connectionHolder, videoBuffer):
         super().__init__(func=self.startPipeline)
 
         self.__width = width
         self.__height = height
         self.__fps = fps
 
-        self.__location = location
+        self.__host = host
+        self.__port = port
 
         self.__tcpStatus = connectionHolder.getConnection("TCP")
         self.__streamStatus = connectionHolder.getConnection("VideoStream")
@@ -30,51 +32,43 @@ class VideoStreamer(ThreadRunner):
         GObject.threads_init()
         Gst.init(None)
 
-    @property
-    def width(self):
-        return self.__width
-
-    @property
-    def height(self):
-        return self.__height
-
-    @property
-    def fps(self):
-        return self.__fps
-
-    @property
-    def location(self):
-        return self.__location
-
     def build_pipeline(self):
         self.__streamStatus.setTryingConnect()
 
         self.__pipeline = Gst.parse_launch(
-            "appsrc name=m_src caps=video/x-raw,width={},height={},framerate={}/1,format=BGR ! videoconvert !"
-            "x264enc name=m_encoder ! video/x-h264,width=640,height=480,framerate={}/1,format=I420,stream-format=byte-stream !"
-            "rtspclientsink name=m_sink"
-            .format(self.__width, self.__height, self.__fps, self.__fps))
+            "appsrc name=m_src caps=video/x-raw,width={},height={},framerate={}/1,format=BGR ! "
+            "videoconvert ! "
+            "x264enc name=m_encoder ! " # edit
+            "video/x-h264,width={},height={},framerate={}/1,format=I420,stream-format=byte-stream,profile=constrained-baseline ! "
+            "udpsink name=m_sink"
+            .format(self.__width, self.__height, self.__fps, self.__width, self.__height, self.__fps))
         self.__bus = self.__pipeline.get_bus()
 
         source = self.__pipeline.get_by_name('m_src')
         source.set_property('is-live', True)
         source.set_property('block', True)
         source.set_property('format', Gst.Format.TIME)
+        source.set_property('do-timestamp', True)
         source.connect('need-data', self.on_need_data)
 
         encoder = self.__pipeline.get_by_name('m_encoder')
         encoder.set_property('tune', 'zerolatency')
+        encoder.set_property('speed-preset', 'ultrafast')
+        encoder.set_property('key-int-max', 60)
+        encoder.set_property('bitrate', 3000)
+        #encoder.set_property('rc-lookahead', 15)
 
         sink = self.__pipeline.get_by_name('m_sink')
-        sink.set_property('location', self.__location)
-
-        #sink.set_property('debug', 1)
+        sink.set_property('host', self.__host)
+        sink.set_property('port', self.__port)
 
     def close_pipeline(self):
         pass
 
     def get_message(self):
         message = self.__bus.timed_pop(Gst.SECOND)
+
+        """
 
         if message is not None and message.type in [Gst.MessageType.EOS, Gst.MessageType.ERROR]:
             print("[VideoStreamer]: Can't stream video to server.", file=sys.stderr)
@@ -93,6 +87,8 @@ class VideoStreamer(ThreadRunner):
             self.__streamStatus.setConnected()
 
             print("[VideoStreamer]: re-start streaming.")
+
+        """
 
         return True
 
@@ -120,12 +116,15 @@ class VideoStreamer(ThreadRunner):
 
         data = data.tostring()
 
+        clock = self.__pipeline.get_clock()
+        #outerTimestamp = clock.get_internal_time() - self.__pipeline.get_base_time()
         outerTimestamp = self.__frameCount * self.__duration
 
         buffer = Gst.Buffer.new_allocate(None, len(data), None)
         buffer.fill(0, data)
         buffer.duration = self.__duration
         buffer.pts = int(outerTimestamp)
+        buffer.dts = int(outerTimestamp)
 
         if self.__frameCount % 60 == 0:
             print("[VideoStreamer]: Attempt to send data.(timestamp: {})".format(outerTimestamp))

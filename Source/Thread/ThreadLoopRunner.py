@@ -2,13 +2,13 @@ import time
 from threading import Thread
 
 class ThreadLoopRunner(Thread):
-    def __init__(self, func, minInterval=0):
+    def __init__(self, func, interval=0):
         super().__init__()
 
         self.__func = func
 
         self.__isRunning = False
-        self.__minInterval = minInterval
+        self.__interval = interval
 
     @property
     def func(self):
@@ -25,12 +25,12 @@ class ThreadLoopRunner(Thread):
         self.__isRunning = value
 
     @property
-    def minInterval(self):
-        return self.__minInterval
+    def interval(self):
+        return self.__interval
 
-    @minInterval.setter
-    def minInterval(self, value):
-        self.__minInterval = value
+    @interval.setter
+    def interval(self, value):
+        self.__interval = value
 
     def run(self):
         self.isRunning = True
@@ -42,4 +42,4 @@ class ThreadLoopRunner(Thread):
             endTime = time.time()
             elapsedTime = endTime - startTime
 
-            time.sleep(max(self.__minInterval - elapsedTime, 0))
+            time.sleep(max(self.__interval - elapsedTime, 0))

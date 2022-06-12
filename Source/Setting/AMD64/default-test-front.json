@@ -1,7 +1,7 @@
 {
     "network": {
         "tcp": {
-            "host": "192.168.142.246",
+            "host": "192.168.141.224",
             "port": 50002
         },
         "video": {
@@ -16,26 +16,26 @@
 
     "device": {
         "camera": {
-            "device": "/dev/video4",
+            "device": "/dev/video0",
             "width": 640,
             "height": 480,
             "fps": 30,
             "format": "YUY2",
-            "id": 1
+            "id": 2
         }
     },
 
     "detector": {
         "motion": {
-            "updateInterval": 10,
+            "updateInterval": 8,
             "updateThreshold": 2.5,
             "motionThreshold": 5.0,
             "targetFPS": 10
         },
         "object": {
-            "label": "darknet/data/yolo-gun.names",
-            "config": "darknet/cfg/yolov3-gun.cfg",
-            "weights": "darknet/weights/yolov3-gun.weights",
+            "label": "darknet/data/coco.names",
+            "config": "darknet/cfg/yolov4-tiny.cfg",
+            "weights": "darknet/weights/yolov4-tiny.weights",
             "threshold": 0.3,
             "targetFPS": 5
         }
@@ -65,7 +65,7 @@
             "object": {
                 "interval": 0.3,
                 "cooldown": 5,
-                "targets": ["Gun", "person"]
+                "targets": ["gun", "person"]
             }
         }
     }

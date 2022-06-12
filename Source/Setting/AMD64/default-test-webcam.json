@@ -27,15 +27,15 @@
 
     "detector": {
         "motion": {
-            "updateInterval": 10,
+            "updateInterval": 8,
             "updateThreshold": 2.5,
             "motionThreshold": 5.0,
             "targetFPS": 10
         },
         "object": {
-            "label": "darknet/data/yolo-gun.names",
-            "config": "darknet/cfg/yolov3-gun.cfg",
-            "weights": "darknet/weights/yolov3-gun.weights",
+            "label": "darknet/data/coco.names",
+            "config": "darknet/cfg/yolov4-tiny.cfg",
+            "weights": "darknet/weights/yolov4-tiny.weights",
             "threshold": 0.3,
             "targetFPS": 5
         }
@@ -65,7 +65,7 @@
             "object": {
                 "interval": 0.3,
                 "cooldown": 5,
-                "targets": ["Gun", "person"]
+                "targets": ["gun", "person"]
             }
         }
     }

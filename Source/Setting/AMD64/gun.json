@@ -16,12 +16,12 @@
 
     "device": {
         "camera": {
-            "device": "/dev/video4",
+            "device": "/dev/video2",
             "width": 640,
             "height": 480,
             "fps": 30,
             "format": "YUY2",
-            "id": 1
+            "id": 0
         }
     },
 
