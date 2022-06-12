@@ -1,29 +1,35 @@
 {
     "network": {
         "tcp": {
-            "host": "211.179.66.138",
-            "port": "50001"
+            "host": "192.168.142.246",
+            "port": 50002
         },
-        "rtsp": {
-            "location": "211.179.66.138:50002/record/0"
+        "video": {
+            "host": "192.168.142.246",
+            "port": 50500
+        },
+        "audio": {
+            "host": "192.168.142.246",
+            "port": 50501
         }
     },
 
     "device": {
         "camera": {
-            "device": "/dev/video4",
+            "device": "/dev/video2",
             "width": 640,
             "height": 480,
             "fps": 30,
-            "format": "YUY2"
+            "format": "YUY2",
+            "id": 0
         }
     },
 
     "detector": {
         "motion": {
-            "updateInterval": 15,
-            "updateThreshold": 4.0,
-            "motionThreshold": 8.0,
+            "updateInterval": 8,
+            "updateThreshold": 2.5,
+            "motionThreshold": 5.0,
             "targetFPS": 10
         },
         "object": {
