@@ -14,7 +14,6 @@ import os
 import sys
 import time
 import pyglet
-import pyglet.window.key as pyglet_key
 
 def HandleSignal(signal, frame):
     print("Signal detected.")
@@ -160,15 +159,6 @@ threads = [
 
 for thread in threads:
     thread.start()
-
-def keydownCallback(key):
-    global threads
-    if key == pyglet_key.Q:
-        for thread in threads:
-            thread.isRunning = False
-
-renderer.addEventHandler("KeyDown", keydownCallback)
-
 
 pyglet.app.run()
 signal.signal(signal.SIGINT, HandleSignal)
