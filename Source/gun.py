@@ -137,7 +137,7 @@ threads = [
         connectionHolder=connectionHolder,
         objectBuffer=bufferHolder.getBuffer("ObjectOut").getBuffer("Send"),
         motionBuffer=bufferHolder.getBuffer("MotionOut").getBuffer("Send"),
-        commandQueue=bufferHolder.getBuffer("Command")),
+        commandQueue=bufferHolder.getBuffer("Command"),ID=0),
     MotionAlerter(
         interval=config.audio.alert.motion.interval,
         cooldown=config.audio.alert.motion.cooldown,

@@ -1,22 +1,14 @@
 {
     "network": {
         "tcp": {
-            "host": "192.168.142.246",
+            "host": "192.168.140.226",
             "port": 50002
-        },
-        "video": {
-            "host": "192.168.142.246",
-            "port": 50500
-        },
-        "audio": {
-            "host": "192.168.142.246",
-            "port": 50501
         }
     },
 
     "device": {
         "camera": {
-            "device": "/dev/video2",
+            "device": "/dev/video4",
             "width": 640,
             "height": 480,
             "fps": 30,

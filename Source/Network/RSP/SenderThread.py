@@ -8,9 +8,10 @@ from .Request import Request
 
 l = logging.getLogger(__name__)
 class SenderThread(Thread):
-    def __init__(self, sock):
+    def __init__(self, sock, onDisconnected):
         super().__init__()
         self.__sock = sock
+        self.__onDisconnected = onDisconnected
         self.__sendMessageQueue = Queue()
         self.__sentRequestDict = {}
 
@@ -29,6 +30,12 @@ class SenderThread(Thread):
                 break
             messageString = message.getMessageString()
             l.debug('send message: \n{}'.format(messageString))
-            self.__sock.sendall(messageString.encode('utf-8'))
+
+            try:
+                self.__sock.sendall(messageString.encode('utf-8'))
+            except BrokenPipeError:
+                self.__onDisconnected()
+                return
+
             if isinstance(message, Request):
                 self.__sentRequestDict[message.sequence] = message

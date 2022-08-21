@@ -7,11 +7,10 @@ import gi
 gi.require_version('Gst', '1.0')
 from gi.repository import Gst, GObject
 
-from Network import ServerStatus
 from Thread import ThreadRunner
 
 class VideoStreamer(ThreadRunner):
-    def __init__(self, width, height, fps, host, port, connectionHolder, videoBuffer):
+    def __init__(self, width, height, fps, host, port, videoBuffer):
         super().__init__(func=self.startPipeline)
 
         self.__width = width
@@ -20,9 +19,6 @@ class VideoStreamer(ThreadRunner):
 
         self.__host = host
         self.__port = port
-
-        self.__tcpStatus = connectionHolder.getConnection("TCP")
-        self.__streamStatus = connectionHolder.getConnection("VideoStream")
 
         self.__duration = 1 / self.__fps * Gst.SECOND
 
@@ -33,8 +29,6 @@ class VideoStreamer(ThreadRunner):
         Gst.init(None)
 
     def build_pipeline(self):
-        self.__streamStatus.setTryingConnect()
-
         self.__pipeline = Gst.parse_launch(
             "appsrc name=m_src caps=video/x-raw,width={},height={},framerate={}/1,format=BGR ! "
             "videoconvert ! "
@@ -61,6 +55,8 @@ class VideoStreamer(ThreadRunner):
         sink = self.__pipeline.get_by_name('m_sink')
         sink.set_property('host', self.__host)
         sink.set_property('port', self.__port)
+
+        self.__bus.connect('message', self.get_message)
 
     def close_pipeline(self):
         pass
@@ -133,7 +129,5 @@ class VideoStreamer(ThreadRunner):
 
         if retval != Gst.FlowReturn.OK:
             print(retval)
-        else:
-            self.__streamStatus.setConnected()
 
         self.__frameCount += 1

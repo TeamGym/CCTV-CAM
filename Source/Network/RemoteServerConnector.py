@@ -5,25 +5,32 @@ import json
 import random
 
 from Thread import ThreadRunner
-from Network.RSP import RspConnection, Request, Response, EndpointType
+from Network import VideoStreamer
+from Network import AudioStreamer
+from Network import AudioPlayer
+from Network.RSP import RspConnection, Request, Response, Stream, EndpointType
+from Network.RSP.stream_data import DetectionResult
 
 class RemoteServerConnector(ThreadRunner):
-    def __init__(self, host, port, videoWidth, videoHeight, cameraId, connectionHolder,
-                 objectBuffer, motionBuffer, commandQueue):
+    def __init__(self, host, port, videoWidth, videoHeight, videoFramerate, cameraId, connectionHolder,
+                 videoBuffer, objectBuffer, motionBuffer, commandQueue, ID):
         super().__init__(func=self.communicate_automatically)
+
+        self.__id = ID
 
         self.__host = host
         self.__port = port
 
         self.__videoWidth = videoWidth
         self.__videoHeight = videoHeight
+        self.__videoFramerate = videoFramerate
+        self.__videoBuffer = videoBuffer
 
         self.__objectBuffer = objectBuffer
         self.__motionBuffer = motionBuffer
         self.__commandQueue = commandQueue
 
         self.__socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.__socket.settimeout(10)
 
         self.__serverStatus = connectionHolder.getConnection("TCP")
 
@@ -35,6 +42,16 @@ class RemoteServerConnector(ThreadRunner):
 
         self.__rspConnection = None
         self.__resetSequenceNumber()
+
+        self.__videoStreamer = None
+        self.__audioStreamer = None
+
+        self.__videoOut = -1
+        self.__audioOut = -1
+        self.__outChannel = -1
+
+        self.__audioPlayer = AudioPlayer(51001)
+        self.__audioPlayer.start()
 
     @property
     def host(self):
@@ -64,26 +81,38 @@ class RemoteServerConnector(ThreadRunner):
         self.__currentCooldown = min(self.__currentCooldown + 1, self.__maxCooldown)
 
     def __sendObject(self, detection):
-        stream = "S{} 1\n".format(self.__port)
+        if self.__outChannel < 0:
+            return
 
-        stream += "{}\n".format(int(detection.timestamp))
+        data = DetectionResult(
+                timestamp=int(detection.timestamp * 1e9),
+                boxes=[])
 
         for box in detection.boxes:
-            stream += "{},{},{},{},{},{},{}\n".format(
-                box.x,
-                box.x + box.width,
-                box.y,
-                box.y + box.height,
-                box.confidence,
-                box.classID,
-                box.label)
+            data.boxes.append(DetectionResult.DetectionBox(
+                left=box.x,
+                right=box.x + box.width,
+                top=box.y,
+                bottom=box.y + box.height,
+                confidence=box.confidence,
+                classID=box.classID,
+                label=box.label))
 
-        self.__rspConnection.sendStream(stream)
+        self.__rspConnection.sendStream(Stream(
+            channel=self.__outChannel,
+            streamType=Stream.Type.DETECTION_RESULT,
+            data=data))
 
     def connect(self):
         while True:
             self.__serverStatus.setTryingConnect()
             try:
+                try:
+                    self.__socket.close()
+                except:
+                    pass
+                self.__socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
                 if self.__socket.connect_ex((self.__host, self.__port)):
                     print("[RemoteServerConnector]: Can't connect TCP server, wait {} second."
                           .format(self.__currentCooldown))
@@ -107,12 +136,67 @@ class RemoteServerConnector(ThreadRunner):
             endpointType=EndpointType.CAM,
             sock=self.__socket)
 
-        self.__rspConnection.addEventHandler('Disconnected', self.__connect)
+        self.__rspConnection.addEventHandler('Disconnected', lambda connection: self.connect())
         self.__rspConnection.start()
 
-    def communicate(self):
-        print("[RemoteServerConnector]: Attempt to send CCTV info.")
+        self.__rspConnection.sendRequest(Request(
+            method=Request.Method.GET_INFO,
+            onResponseCallback=self.__onGetInfo
+        ))
 
+    def __onGetInfo(self, response):
+        ID = self.__id
+
+        camList = [int(i) for i in response.getProperty('CamList').split(',')]
+        method = Request.Method.GET_INFO,
+
+        assert ID in camList
+
+        audioIn = response.getProperty('Cam{}-AudioInPort'.format(ID))
+        inChannel = response.getProperty('Cam{}-InChannel'.format(ID))
+
+        self.__videoOut = int(response.getProperty('Cam{}-VideoPort'.format(ID)))
+        self.__audioOut = int(response.getProperty('Cam{}-AudioOutPort'.format(ID)))
+        self.__outChannel = int(response.getProperty('Cam{}-OutChannel'.format(ID)))
+
+        if self.__audioStreamer is None:
+            self.__audioStreamer = AudioStreamer(self.__host, self.__audioOut)
+            self.__audioStreamer.start()
+
+        if self.__videoStreamer is None:
+            self.__videoStreamer = VideoStreamer(
+                width=self.__videoWidth,
+                height=self.__videoHeight,
+                fps=self.__videoFramerate,
+                host=self.__host,
+                port=self.__videoOut,
+                videoBuffer=self.__videoBuffer)
+            self.__videoStreamer.start()
+
+
+        self.__rspConnection.sendRequest(Request(
+            method=Request.Method.JOIN,
+            properties={'Type': 'UDP',
+                        'Tunnel': audioIn,
+                        'Listen': '51001'},
+            onResponseCallback=lambda response : self.__onJoinedAudio(response, 51001)
+        ))
+
+        self.__rspConnection.sendRequest(Request(
+            method=Request.Method.JOIN,
+            properties={'Type': 'STREAM',
+                        'Tunnel': inChannel,
+                        'Listen': '0'},
+            onResponseCallback=lambda response : self.__onJoinedStream(response)
+        ))
+
+    def __onJoinedAudio(self, response, port):
+        pass
+
+    def __onJoinedStream(self, response):
+        pass
+
+    def communicate(self):
         while True:
             if self.__objectBuffer.size <= 0:
                 time.sleep(1 / 30.0)

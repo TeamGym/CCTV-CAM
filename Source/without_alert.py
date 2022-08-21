@@ -130,17 +130,6 @@ threads = [
         objectBuffer=bufferHolder.getBuffer("ObjectOut").getBuffer("Send"),
         motionBuffer=bufferHolder.getBuffer("MotionOut").getBuffer("Send"),
         commandQueue=bufferHolder.getBuffer("Command"),ID=1),
-    MotionAlerter(
-        interval=config.audio.alert.motion.interval,
-        cooldown=config.audio.alert.motion.cooldown,
-        detectionBuffer=bufferHolder.getBuffer("MotionOut").getBuffer("Alert"),
-        engine=ttsEngine),
-    ObjectAlerter(
-        interval=config.audio.alert.object.interval,
-        targets=config.audio.alert.object.targets,
-        cooldown=config.audio.alert.object.cooldown,
-        detectionBuffer=bufferHolder.getBuffer("ObjectOut").getBuffer("Alert"),
-        engine=ttsEngine),
     MotionLogger(
         filePath=time.strftime('../Log/%Y-%m-%d/Motion_%H_%M_%S', time.localtime()),
         detectionBuffer=bufferHolder.getBuffer("MotionOut").getBuffer("Log")),

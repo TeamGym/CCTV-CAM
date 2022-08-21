@@ -28,31 +28,34 @@ class ReceiverThread(Thread):
         parser = self.__parserList[0]
 
         while True:
-            received = self.__sock.recv(4096)
+            try:
+                received = self.__sock.recv(4096)
 
-            if received == b'':
-                self.__onDisconnected()
-                return
+                if received == b'':
+                    self.__onDisconnected()
+                    return
 
-            buffer += received
+                buffer += received
 
-            while b'\n' in buffer:
-                lineBytes, rest = buffer.split(b'\n', 1)
-                buffer = rest
+                while b'\n' in buffer:
+                    lineBytes, rest = buffer.split(b'\n', 1)
+                    buffer = rest
 
-                line = lineBytes.decode('utf-8')
+                    line = lineBytes.decode('utf-8')
 
-                for i, parser in enumerate(self.__parserList):
-                    state, message = parser.parseLine(line)
+                    for i, parser in enumerate(self.__parserList):
+                        state, message = parser.parseLine(line)
 
-                    if state == parser.State.DONE:
-                        l.debug('received message: \n{}'.format(message.getMessageString()))
-                        message.remoteAddress = self.__sock.getpeername()
-                        self.__receiveMessageQueue.put(message)
+                        if state == parser.State.DONE:
+                            l.debug('received message: \n{}'.format(message.getMessageString()))
+                            message.remoteAddress = self.__sock.getpeername()
+                            self.__receiveMessageQueue.put(message)
+                            parser.reset()
+
+                        if not parser.isFailed():
+                            self.__parserList = self.__parserList[i:] + self.__parserList[:i]
+                            break
+
                         parser.reset()
-
-                    if not parser.isFailed():
-                        self.__parserList = self.__parserList[i:] + self.__parserList[:i]
-                        break
-
-                    parser.reset()
+            except TimeoutError:
+                pass

@@ -21,7 +21,7 @@ def HandleSignal(signal, frame):
     sys.exit(0)
 
 config = JSON()
-config.loadFile("Setting/AMD64/default-test.json")
+config.loadFile("Setting/AMD64/gun.json")
 
 bufferHolder = BufferHolder()
 bufferHolder.connectBuffers(
@@ -129,18 +129,7 @@ threads = [
         videoBuffer=bufferHolder.getBuffer("Video").getBuffer("Stream"),
         objectBuffer=bufferHolder.getBuffer("ObjectOut").getBuffer("Send"),
         motionBuffer=bufferHolder.getBuffer("MotionOut").getBuffer("Send"),
-        commandQueue=bufferHolder.getBuffer("Command"),ID=1),
-    MotionAlerter(
-        interval=config.audio.alert.motion.interval,
-        cooldown=config.audio.alert.motion.cooldown,
-        detectionBuffer=bufferHolder.getBuffer("MotionOut").getBuffer("Alert"),
-        engine=ttsEngine),
-    ObjectAlerter(
-        interval=config.audio.alert.object.interval,
-        targets=config.audio.alert.object.targets,
-        cooldown=config.audio.alert.object.cooldown,
-        detectionBuffer=bufferHolder.getBuffer("ObjectOut").getBuffer("Alert"),
-        engine=ttsEngine),
+        commandQueue=bufferHolder.getBuffer("Command"), ID=0),
     MotionLogger(
         filePath=time.strftime('../Log/%Y-%m-%d/Motion_%H_%M_%S', time.localtime()),
         detectionBuffer=bufferHolder.getBuffer("MotionOut").getBuffer("Log")),
