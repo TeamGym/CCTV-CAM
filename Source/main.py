@@ -15,13 +15,20 @@ import sys
 import time
 import pyglet
 import pyglet.window.key as pyglet_key
+import tkinter
+from tkinter import filedialog
 
 def HandleSignal(signal, frame):
     print("Signal detected.")
     sys.exit(0)
 
+root = tkinter.Tk()
+root.withdraw()
+
+configFileName = filedialog.askopenfilename(title='Choose config file')
+
 config = JSON()
-config.loadFile("Setting/AMD64/default-test.json")
+config.loadFile(configFileName)
 
 bufferHolder = BufferHolder()
 bufferHolder.connectBuffers(
@@ -54,12 +61,19 @@ bufferHolder.connectBuffers(
 connectionHolder = ConnectionHolder()
 connectionHolder.addConnections(["TCP", "VideoStream"])
 
+print("Creating Video Capture...")
+print("    Device: {}".format(config.device.camera.device))
+print("    Size: ({}, {})".format(config.device.camera.width, config.device.camera.height))
+print("    Framerate: {}".format(config.device.camera.fps))
+
 videoCapture = VideoCapture(bufferHolder.getBuffer("Video"))
 videoCapture.openDevice(
     config.device.camera.device,
     config.device.camera.width,
     config.device.camera.height,
     config.device.camera.fps)
+
+print("Successfully created video capture.")
 
 monitors = [
     RenderableMonitor(name="Original",
@@ -82,10 +96,20 @@ monitors = [
                       height=config.device.camera.height)
 ]
 
+print("Initializing TTS Engine...")
+
 ttsEngine = TTSEngine()
 ttsEngine.start()
 
+print("Successfully initialized TTS Engine.")
+
+print("Initializing Renderer...")
+
 renderer = BufferViewer(60, monitors=monitors)
+
+print("Successfully initialized Renderer.")
+
+print("Initializing main system...")
 
 os.makedirs("../Log/" + time.strftime("%Y-%m-%d"), exist_ok=True)
 
@@ -109,15 +133,6 @@ threads = [
         videoBuffer=bufferHolder.getBuffer("Video").getBuffer("Motion"),
         outputBuffer=bufferHolder.getBuffer("MotionOut"),
         renderBuffer=bufferHolder.getBuffer("MotionRender")),
-    ClipExporter(
-        prefix="../Clip/",
-        fourcc=config.video.clip.fourcc,
-        extension=config.video.clip.extension,
-        width=config.video.clip.width,
-        height=config.video.clip.height,
-        fps=config.video.clip.fps,
-        clipLength=config.video.clip.length,
-        videoBuffer=bufferHolder.getBuffer("Video").getBuffer("Record")),
     RemoteServerConnector(
         host=config.network.tcp.host,
         port=config.network.tcp.port,
@@ -129,28 +144,62 @@ threads = [
         videoBuffer=bufferHolder.getBuffer("Video").getBuffer("Stream"),
         objectBuffer=bufferHolder.getBuffer("ObjectOut").getBuffer("Send"),
         motionBuffer=bufferHolder.getBuffer("MotionOut").getBuffer("Send"),
-        commandQueue=bufferHolder.getBuffer("Command"),ID=1),
-    MotionAlerter(
+        commandQueue=bufferHolder.getBuffer("Command"),ID=1)
+]
+
+print("Initializing Components...")
+print("    Recorder: {}".format(config.component.record))
+print("    Alerter: {}".format(config.component.alert))
+print("    Logger: {}".format(config.component.log))
+
+if config.component.record:
+    recorder = ClipExporter(
+        prefix="../Clip/",
+        fourcc=config.video.clip.fourcc,
+        extension=config.video.clip.extension,
+        width=config.video.clip.width,
+        height=config.video.clip.height,
+        fps=config.video.clip.fps,
+        clipLength=config.video.clip.length,
+        videoBuffer=bufferHolder.getBuffer("Video").getBuffer("Record"))
+
+    threads.append(recorder)
+
+if config.component.alert:
+    motionAlerter = MotionAlerter(
         interval=config.audio.alert.motion.interval,
         cooldown=config.audio.alert.motion.cooldown,
         detectionBuffer=bufferHolder.getBuffer("MotionOut").getBuffer("Alert"),
-        engine=ttsEngine),
-    ObjectAlerter(
+        engine=ttsEngine)
+
+    objectAlerter = ObjectAlerter(
         interval=config.audio.alert.object.interval,
         targets=config.audio.alert.object.targets,
         cooldown=config.audio.alert.object.cooldown,
         detectionBuffer=bufferHolder.getBuffer("ObjectOut").getBuffer("Alert"),
-        engine=ttsEngine),
-    MotionLogger(
+        engine=ttsEngine)
+
+    threads.append(motionAlerter)
+    threads.append(objectAlerter)
+
+if config.component.log:
+    motionLogger = MotionLogger(
         filePath=time.strftime('../Log/%Y-%m-%d/Motion_%H_%M_%S', time.localtime()),
-        detectionBuffer=bufferHolder.getBuffer("MotionOut").getBuffer("Log")),
-    ObjectLogger(
+        detectionBuffer=bufferHolder.getBuffer("MotionOut").getBuffer("Log"))
+
+    objectLogger = ObjectLogger(
         filePath=time.strftime('../Log/%Y-%m-%d/Object_%H_%M_%S', time.localtime()),
         detectionBuffer=bufferHolder.getBuffer("ObjectOut").getBuffer("Log"))
-]
+
+    threads.append(motionLogger)
+    threads.append(objectLogger)
+
+print("Successfully initialized all components.")
 
 for thread in threads:
     thread.start()
+
+print("Successfully initialized main system.")
 
 def keydownCallback(key):
     global threads
@@ -160,6 +209,7 @@ def keydownCallback(key):
 
 renderer.addEventHandler("KeyDown", keydownCallback)
 
+print("Running Application...")
 
 pyglet.app.run()
 signal.signal(signal.SIGINT, HandleSignal)
