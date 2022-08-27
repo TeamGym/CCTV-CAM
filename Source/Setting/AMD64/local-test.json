@@ -3,15 +3,6 @@
         "tcp": {
             "host": "127.0.0.1",
             "port": 50002
-        },
-        "video": {
-            "host": "127.0.0.1",
-            "port": 50500
-
-        },
-        "audio": {
-            "host": "192.168.142.246",
-            "port": 50501
         }
     },
 
@@ -69,5 +60,10 @@
                 "targets": ["gun", "person"]
             }
         }
+    },
+    "component": {
+        "record": true,
+        "alert": true,
+        "log": true
     }
 }

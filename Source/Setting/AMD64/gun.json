@@ -60,5 +60,10 @@
                 "targets": ["Gun", "person"]
             }
         }
+    },
+    "component": {
+        "record": true,
+        "alert": true,
+        "log": true
     }
 }

@@ -1,6 +1,0 @@
-{
-    "label": "darknet/data/yolo-weapon.names",
-    "config": "darknet/cfg/yolov4-weapon.cfg",
-    "weights": "darknet/weights/yolov4-weapon.weights",
-    "confidenceThreshold": 0.3
-}
